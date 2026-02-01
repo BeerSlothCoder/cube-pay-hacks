@@ -1,0 +1,33 @@
+{
+  "name": "cubepay-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "CubePay - AR Agent Deployment & Viewing Platform with Multi-Chain Payments",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "clean": "turbo run clean && rm -rf node_modules",
+    "format": "prettier --write \"**/*.{ts,tsx,md,json}\"",
+    "dev:deployment": "turbo run dev --filter=deployment-app",
+    "dev:ar-viewer": "turbo run dev --filter=ar-viewer-app",
+    "dev:api": "turbo run dev --filter=api-server",
+    "setup": "npm install && npm run build"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "prettier": "^3.2.4",
+    "turbo": "^1.12.0",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "packageManager": "npm@10.2.4"
+}
