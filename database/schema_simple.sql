@@ -181,99 +181,56 @@ CREATE TABLE IF NOT EXISTS ar_qr_codes (
 -- =====================================================
 
 -- deployed_objects indexes
-CREATE INDEX IF NOT EXISTS idx_deployed_objects_location 
-    ON deployed_objects (latitude, longitude);
-CREATE INDEX IF NOT EXISTS idx_deployed_objects_user_id 
-    ON deployed_objects (user_id);
-CREATE INDEX IF NOT EXISTS idx_deployed_objects_active 
-    ON deployed_objects (is_active) WHERE is_active = true;
-CREATE INDEX IF NOT EXISTS idx_deployed_objects_agent_type 
-    ON deployed_objects (agent_type);
-CREATE INDEX IF NOT EXISTS idx_deployed_objects_chain_id 
-    ON deployed_objects (chain_id);
-CREATE INDEX IF NOT EXISTS idx_deployed_objects_created_at 
-    ON deployed_objects (created_at);
-
--- JSONB indexes for complex queries
-CREATE INDEX IF NOT EXISTS idx_deployed_objects_deployment_network 
-    ON deployed_objects USING GIN (deployment_network);
-CREATE INDEX IF NOT EXISTS idx_deployed_objects_payment_methods 
-    ON deployed_objects USING GIN (payment_methods);
-CREATE INDEX IF NOT EXISTS idx_deployed_objects_mcp_services 
-    ON deployed_objects USING GIN (mcp_services) WHERE mcp_services IS NOT NULL;
-CREATE INDEX IF NOT EXISTS idx_deployed_objects_supported_networks 
-    ON deployed_objects USING GIN (supported_networks);
+CREATE INDEX IF NOT EXISTS idx_deployed_objects_location ON deployed_objects (latitude, longitude);
+CREATE INDEX IF NOT EXISTS idx_deployed_objects_user_id ON deployed_objects (user_id);
+CREATE INDEX IF NOT EXISTS idx_deployed_objects_active ON deployed_objects (is_active) WHERE is_active = true;
+CREATE INDEX IF NOT EXISTS idx_deployed_objects_agent_type ON deployed_objects (agent_type);
+CREATE INDEX IF NOT EXISTS idx_deployed_objects_chain_id ON deployed_objects (chain_id);
+CREATE INDEX IF NOT EXISTS idx_deployed_objects_created_at ON deployed_objects (created_at);
+CREATE INDEX IF NOT EXISTS idx_deployed_objects_deployment_network ON deployed_objects USING GIN (deployment_network);
+CREATE INDEX IF NOT EXISTS idx_deployed_objects_payment_methods ON deployed_objects USING GIN (payment_methods);
+CREATE INDEX IF NOT EXISTS idx_deployed_objects_mcp_services ON deployed_objects USING GIN (mcp_services) WHERE mcp_services IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_deployed_objects_supported_networks ON deployed_objects USING GIN (supported_networks);
 
 -- ar_qr_codes indexes
-CREATE INDEX IF NOT EXISTS idx_ar_qr_codes_status 
-    ON ar_qr_codes(status);
-CREATE INDEX IF NOT EXISTS idx_ar_qr_codes_agent_id 
-    ON ar_qr_codes(agent_id);
-CREATE INDEX IF NOT EXISTS idx_ar_qr_codes_expiration 
-    ON ar_qr_codes(expiration_time);
-CREATE INDEX IF NOT EXISTS idx_ar_qr_codes_location 
-    ON ar_qr_codes(latitude, longitude) WHERE latitude IS NOT NULL;
-CREATE INDEX IF NOT EXISTS idx_ar_qr_codes_transaction 
-    ON ar_qr_codes(transaction_id);
-CREATE INDEX IF NOT EXISTS idx_ar_qr_codes_protocol 
-    ON ar_qr_codes(protocol);
+CREATE INDEX IF NOT EXISTS idx_ar_qr_codes_status ON ar_qr_codes(status);
+CREATE INDEX IF NOT EXISTS idx_ar_qr_codes_agent_id ON ar_qr_codes(agent_id);
+CREATE INDEX IF NOT EXISTS idx_ar_qr_codes_expiration ON ar_qr_codes(expiration_time);
+CREATE INDEX IF NOT EXISTS idx_ar_qr_codes_location ON ar_qr_codes(latitude, longitude) WHERE latitude IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_ar_qr_codes_transaction ON ar_qr_codes(transaction_id);
+CREATE INDEX IF NOT EXISTS idx_ar_qr_codes_protocol ON ar_qr_codes(protocol);
 
 -- =====================================================
 -- ROW LEVEL SECURITY (RLS) POLICIES
 -- =====================================================
 
--- Enable RLS
 ALTER TABLE deployed_objects ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ar_qr_codes ENABLE ROW LEVEL SECURITY;
 
--- deployed_objects policies
-CREATE POLICY "Anyone can read deployed objects" 
-    ON deployed_objects FOR SELECT TO public USING (true);
+CREATE POLICY "Anyone can read deployed objects" ON deployed_objects FOR SELECT TO public USING (true);
+CREATE POLICY "Users can insert objects" ON deployed_objects FOR INSERT TO public WITH CHECK (true);
+CREATE POLICY "Users can update their own objects" ON deployed_objects FOR UPDATE TO public USING (true) WITH CHECK (true);
+CREATE POLICY "Users can delete their own objects" ON deployed_objects FOR DELETE TO public USING (true);
 
-CREATE POLICY "Users can insert objects" 
-    ON deployed_objects FOR INSERT TO public WITH CHECK (true);
-
-CREATE POLICY "Users can update their own objects" 
-    ON deployed_objects FOR UPDATE TO public 
-    USING (true) WITH CHECK (true);
-
-CREATE POLICY "Users can delete their own objects" 
-    ON deployed_objects FOR DELETE TO public USING (true);
-
--- ar_qr_codes policies
-CREATE POLICY "Allow read access to active QR codes" 
-    ON ar_qr_codes FOR SELECT 
-    USING (status IN ('active', 'generated'));
-
-CREATE POLICY "Allow creating QR codes" 
-    ON ar_qr_codes FOR INSERT WITH CHECK (true);
-
-CREATE POLICY "Allow updating QR codes" 
-    ON ar_qr_codes FOR UPDATE USING (true);
+CREATE POLICY "Allow read access to active QR codes" ON ar_qr_codes FOR SELECT USING (status IN ('active', 'generated'));
+CREATE POLICY "Allow creating QR codes" ON ar_qr_codes FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow updating QR codes" ON ar_qr_codes FOR UPDATE USING (true);
 
 -- =====================================================
 -- DATABASE FUNCTIONS
 -- =====================================================
 
--- Function to update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
     NEW.updated_at = NOW();
     RETURN NEW;
 END;
-$$ LANGUAGE 'plpgsql';
+$$ LANGUAGE plpgsql;
 
--- Triggers for auto-updating updated_at
-CREATE TRIGGER update_deployed_objects_updated_at 
-    BEFORE UPDATE ON deployed_objects 
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_deployed_objects_updated_at BEFORE UPDATE ON deployed_objects FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_ar_qr_codes_updated_at BEFORE UPDATE ON ar_qr_codes FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
-CREATE TRIGGER update_ar_qr_codes_updated_at 
-    BEFORE UPDATE ON ar_qr_codes 
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
--- Function to clean up expired QR codes
 CREATE OR REPLACE FUNCTION cleanup_expired_qr_codes()
 RETURNS INTEGER AS $$
 DECLARE
@@ -281,56 +238,10 @@ DECLARE
 BEGIN
     UPDATE ar_qr_codes 
     SET status = 'expired', updated_at = NOW()
-    WHERE status IN ('generated', 'active') 
-    AND expiration_time < NOW();
+    WHERE status IN ('generated', 'active') AND expiration_time < NOW();
     
     GET DIAGNOSTICS affected_count = ROW_COUNT;
     RETURN affected_count;
-END;
-$$ LANGUAGE 'plpgsql';
-
--- Function to get agents by network
-CREATE OR REPLACE FUNCTION get_agents_by_network(target_chain_id INTEGER)
-RETURNS TABLE(
-    id UUID,
-    name TEXT,
-    description TEXT,
-    location JSONB,
-    agent_type TEXT,
-    primary_network JSONB,
-    network_deployment JSONB,
-    interaction_fee_usdfc DECIMAL,
-    created_at TIMESTAMPTZ
-) AS $$
-BEGIN
-    RETURN QUERY
-    SELECT
-        do.id,
-        do.name,
-        do.description,
-        jsonb_build_object(
-            'latitude', do.latitude,
-            'longitude', do.longitude,
-            'altitude', do.altitude
-        ),
-        do.agent_type,
-        do.deployment_network->'primary',
-        CASE
-            WHEN (do.deployment_network->'primary'->>'chainId')::INTEGER = target_chain_id
-            THEN do.deployment_network->'primary'
-            ELSE (
-                SELECT nd
-                FROM jsonb_array_elements(do.deployment_network->'additional') AS nd
-                WHERE (nd->>'chainId')::INTEGER = target_chain_id
-                LIMIT 1
-            )
-        END,
-        do.interaction_fee_usdfc,
-        do.created_at
-    FROM deployed_objects do
-    WHERE
-        do.supported_networks @> jsonb_build_array(target_chain_id::TEXT) OR
-        (do.deployment_network->'primary'->>'chainId')::INTEGER = target_chain_id;
 END;
 $$ LANGUAGE plpgsql;
 
