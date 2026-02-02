@@ -16,6 +16,7 @@ Multi-chain wallet connection layer with Arc chain abstraction for CubePay.
 CubePay uses a 6-faced cube UI for payment methods:
 
 ### Face 1: Crypto QR Payment (Arc) 💳
+
 Pay with USDC from **any chain** using Circle's Arc chain abstraction. No need to choose source or destination chain - Arc handles routing automatically.
 
 **Status:** ✅ Enabled  
@@ -23,28 +24,33 @@ Pay with USDC from **any chain** using Circle's Arc chain abstraction. No need t
 **Speed:** <500ms instant transfers
 
 ### Face 2: Virtual Card Payment 💰
+
 Revolut virtual card integration with USDC support.
 
 **Status:** ✅ Enabled  
 **Technology:** Revolut API + USDC
 
 ### Face 3: Sound Pay 🔊
+
 Pay using sound waves.
 
 **Status:** 🚧 Coming Soon
 
 ### Face 4: Voice Pay 🎤
+
 Voice-activated payments.
 
 **Status:** 🚧 Coming Soon
 
 ### Face 5: On/Off Ramp 🏦
+
 Convert between USDC and fiat currencies for smooth onboarding.
 
 **Status:** ✅ Enabled  
 **Technology:** USDC ↔ Fiat bridges
 
 ### Face 6: ENS Payment 🏷️
+
 Pay merchants using ENS names (e.g., `merchant.eth`) instead of addresses.
 
 **Status:** ✅ Enabled  
@@ -62,21 +68,21 @@ npm install @cubepay/wallet-connector
 ### Initialize Wallet Connector
 
 ```typescript
-import { createWalletConnector } from '@cubepay/wallet-connector';
+import { createWalletConnector } from "@cubepay/wallet-connector";
 
 const wallet = createWalletConnector({
   arc: {
     gatewayEnabled: true,
     bridgeKitEnabled: true,
     instantTransfers: true,
-    unifiedBalance: true
+    unifiedBalance: true,
   },
   ens: {
     enabled: true,
     resolveNames: true,
     reverseResolve: true,
-    supportedChains: ['ethereum', 'arbitrum', 'base']
-  }
+    supportedChains: ["ethereum", "arbitrum", "base"],
+  },
 });
 ```
 
@@ -84,16 +90,16 @@ const wallet = createWalletConnector({
 
 ```typescript
 // Circle Wallet (recommended for Arc)
-await wallet.connect('circle');
+await wallet.connect("circle");
 
 // MetaMask (EVM chains)
-await wallet.connect('metamask');
+await wallet.connect("metamask");
 
 // Phantom (Solana)
-await wallet.connect('phantom');
+await wallet.connect("phantom");
 
 // HashPack (Hedera)
-await wallet.connect('hashpack');
+await wallet.connect("hashpack");
 ```
 
 ### Chain-Abstracted Payment (Face 1)
@@ -102,22 +108,22 @@ await wallet.connect('hashpack');
 // User pays from ANY chain, agent receives on destination chain
 const tx = await wallet.executeChainAbstractedPayment({
   // Source (optional - Arc abstracts this)
-  sourceToken: 'USDC',
-  sourceAmount: '10.00',
-  
+  sourceToken: "USDC",
+  sourceAmount: "10.00",
+
   // Destination
-  destinationChain: 'ethereum-sepolia',
-  destinationToken: 'USDC',
-  destinationAddress: '0x123...',
-  
+  destinationChain: "ethereum-sepolia",
+  destinationToken: "USDC",
+  destinationAddress: "0x123...",
+
   // Arc magic
   useArcGateway: true,
   instantSettlement: true,
-  
+
   // Payment face
-  paymentFace: 'crypto-qr',
-  
-  agentId: 'agent-uuid-here'
+  paymentFace: "crypto-qr",
+
+  agentId: "agent-uuid-here",
 });
 
 console.log(`Payment confirmed: ${tx.hash}`);
@@ -128,18 +134,18 @@ console.log(`Payment confirmed: ${tx.hash}`);
 ```typescript
 // Pay merchant using ENS name
 const tx = await wallet.executeChainAbstractedPayment({
-  sourceToken: 'USDC',
-  sourceAmount: '25.00',
-  
-  destinationChain: 'ethereum-sepolia',
-  destinationToken: 'USDC',
-  destinationAddress: '0x...',  // Resolved automatically
-  destinationENS: 'merchant.eth', // Human-readable name
-  
+  sourceToken: "USDC",
+  sourceAmount: "25.00",
+
+  destinationChain: "ethereum-sepolia",
+  destinationToken: "USDC",
+  destinationAddress: "0x...", // Resolved automatically
+  destinationENS: "merchant.eth", // Human-readable name
+
   useArcGateway: true,
-  paymentFace: 'ens-payment',
-  
-  merchantId: 'merchant-123'
+  paymentFace: "ens-payment",
+
+  merchantId: "merchant-123",
 });
 ```
 
@@ -147,28 +153,28 @@ const tx = await wallet.executeChainAbstractedPayment({
 
 ```typescript
 // Connection events
-wallet.on('connect', (state) => {
-  console.log('Connected:', state.address);
-  console.log('ENS name:', state.ensName);
+wallet.on("connect", (state) => {
+  console.log("Connected:", state.address);
+  console.log("ENS name:", state.ensName);
 });
 
-wallet.on('disconnect', () => {
-  console.log('Wallet disconnected');
+wallet.on("disconnect", () => {
+  console.log("Wallet disconnected");
 });
 
 // Account changes
-wallet.on('accountChanged', (address) => {
-  console.log('Account changed:', address);
+wallet.on("accountChanged", (address) => {
+  console.log("Account changed:", address);
 });
 
 // Chain changes
-wallet.on('chainChanged', (chainId) => {
-  console.log('Chain changed:', chainId);
+wallet.on("chainChanged", (chainId) => {
+  console.log("Chain changed:", chainId);
 });
 
 // Errors
-wallet.on('error', (error) => {
-  console.error('Wallet error:', error);
+wallet.on("error", (error) => {
+  console.error("Wallet error:", error);
 });
 ```
 
@@ -177,8 +183,8 @@ wallet.on('error', (error) => {
 ```typescript
 const balance = await wallet.getArcUnifiedBalance(wallet.getState().address);
 
-console.log('Total USDC:', balance.totalUSDC);
-console.log('Balances by chain:', balance.balancesByChain);
+console.log("Total USDC:", balance.totalUSDC);
+console.log("Balances by chain:", balance.balancesByChain);
 // {
 //   'ethereum-sepolia': '100.00',
 //   'base-sepolia': '50.00',
@@ -189,9 +195,9 @@ console.log('Balances by chain:', balance.balancesByChain);
 ### Switch Networks
 
 ```typescript
-import { getNetworkById } from '@cubepay/network-config';
+import { getNetworkById } from "@cubepay/network-config";
 
-const baseNetwork = getNetworkById('base-sepolia');
+const baseNetwork = getNetworkById("base-sepolia");
 await wallet.switchNetwork(baseNetwork);
 ```
 
@@ -233,7 +239,7 @@ Pay merchants using human-readable names instead of addresses:
 // Use: merchant.eth
 
 await wallet.executeChainAbstractedPayment({
-  destinationENS: 'merchant.eth',
+  destinationENS: "merchant.eth",
   // ... other params
 });
 ```
@@ -245,17 +251,17 @@ ENS names are resolved automatically and cached for future payments.
 Access payment face configurations:
 
 ```typescript
-import { PAYMENT_FACES } from '@cubepay/wallet-connector';
+import { PAYMENT_FACES } from "@cubepay/wallet-connector";
 
 // Check if face is enabled
-if (PAYMENT_FACES['crypto-qr'].enabled) {
+if (PAYMENT_FACES["crypto-qr"].enabled) {
   // Show crypto QR payment option
 }
 
 // Display coming soon faces
 Object.values(PAYMENT_FACES)
-  .filter(face => face.comingSoon)
-  .forEach(face => {
+  .filter((face) => face.comingSoon)
+  .forEach((face) => {
     console.log(`${face.label}: Coming Soon`);
   });
 ```
@@ -286,6 +292,7 @@ Object.values(PAYMENT_FACES)
 ## Supported Networks
 
 ### EVM Chains (with Arc + USDC)
+
 - Ethereum Sepolia
 - Arbitrum Sepolia
 - Base Sepolia
@@ -294,9 +301,11 @@ Object.values(PAYMENT_FACES)
 - Polygon Amoy
 
 ### Solana
+
 - Solana Devnet (USDC SPL)
 
 ### Hedera
+
 - Hedera Testnet (USDh - custom stablecoin)
 
 ## Future: Chainlink CCIP
@@ -307,14 +316,15 @@ Chainlink Cross-Chain Interoperability Protocol integration is included but **di
 const wallet = createWalletConnector({
   chainlink: {
     enabled: true,
-    lanes: ['ethereum-sepolia', 'arbitrum-sepolia']
-  }
+    lanes: ["ethereum-sepolia", "arbitrum-sepolia"],
+  },
 });
 ```
 
 ## Mobile Optimization
 
 All wallet interactions are designed for mobile:
+
 - ✅ Touch-friendly button sizes (44px minimum)
 - ✅ Responsive layouts (320px-428px width)
 - ✅ Full-screen camera for QR scanning

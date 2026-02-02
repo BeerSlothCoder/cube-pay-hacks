@@ -434,9 +434,34 @@ export class CubePayDatabase {
   getClient(): SupabaseClient {
     return this.supabase;
   }
+
+  /**
+   * Deploy a new agent with screen position
+   */
+  async deployAgent(data: {
+    agent_name: string;
+    latitude: number;
+    longitude: number;
+    screen_position: { x: number; y: number; z_index: number };
+    payment_enabled: boolean;
+  }) {
+    const { data: result, error } = await this.supabase
+      .from('deployed_objects')
+      .insert({
+        agent_name: data.agent_name,
+        latitude: data.latitude,
+        longitude: data.longitude,
+        screen_position: data.screen_position,
+        payment_enabled: data.payment_enabled,
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return result;
+  }
 }
 
-// Export factory function for convenience
 export function createCubePayDatabase(
   supabaseUrl: string,
   supabaseKey: string,

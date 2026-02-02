@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CubePay AR Test</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            background: #0A0E1A; 
+            color: white; 
+            font-family: sans-serif;
+            overflow: hidden;
+            position: fixed;
+            width: 100%;
+            height: 100%;
+        }
+        #root { width: 100%; height: 100%; position: relative; }
+        video { 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            object-fit: cover; 
+        }
+        #canvas { 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            z-index: 10;
+            pointer-events: auto;
+        }
+        #info {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(10, 14, 26, 0.9);
+            padding: 15px;
+            border-radius: 10px;
+            z-index: 100;
+        }
+        .cube-container {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 200px;
+            height: 200px;
+            z-index: 20;
+            display: none;
+        }
+        .cube-container.active { display: block; }
+        .cube {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #1E40AF, #3B82F6);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 40px rgba(59, 130, 246, 0.5);
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        .agent-marker {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            background: #60A5FA;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            box-shadow: 0 0 20px rgba(96, 165, 250, 0.5);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .agent-marker:hover { transform: scale(1.1); }
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 50;
+        }
+        .spinner {
+            border: 4px solid rgba(96, 165, 250, 0.3);
+            border-top: 4px solid #60A5FA;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div id="root">
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Starting camera...</p>
+        </div>
+        <video id="video" playsinline autoplay muted></video>
+        <canvas id="canvas"></canvas>
+        <div id="info">
+            <h2 style="margin-bottom: 10px;">CubePay AR Test</h2>
+            <p id="status">Initializing...</p>
+        </div>
+        <div class="cube-container" id="cube">
+            <div class="cube">
+                <h3>💳 Payment Cube</h3>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const loading = document.getElementById('loading');
+        const status = document.getElementById('status');
+        const cubeContainer = document.getElementById('cube');
+
+        // Mock agents at different screen positions (percentage)
+        const mockAgents = [
+            { id: 1, name: 'Shop Agent', x: 30, y: 40, initial: 'S' },
+            { id: 2, name: 'Pay Agent', x: 70, y: 60, initial: 'P' },
+            { id: 3, name: 'Info Agent', x: 50, y: 30, initial: 'I' }
+        ];
+
+        let selectedAgent = null;
+
+        async function startCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: { ideal: 'environment' } },
+                    audio: false
+                });
+                video.srcObject = stream;
+                video.onloadedmetadata = () => {
+                    video.play();
+                    loading.style.display = 'none';
+                    status.textContent = 'Camera active - Tap agents to pay';
+                    resizeCanvas();
+                    renderAgents();
+                };
+            } catch (err) {
+                console.error('Camera error:', err);
+                status.textContent = 'Camera access denied';
+                loading.innerHTML = '<p style="color: #EF4444;">Please enable camera access</p>';
+            }
+        }
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            renderAgents();
+        }
+
+        function renderAgents() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            mockAgents.forEach(agent => {
+                const x = (agent.x / 100) * canvas.width;
+                const y = (agent.y / 100) * canvas.height;
+
+                // Glow
+                ctx.shadowColor = '#60A5FA';
+                ctx.shadowBlur = 20;
+                ctx.fillStyle = 'rgba(96, 165, 250, 0.3)';
+                ctx.beginPath();
+                ctx.arc(x, y, 35, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Circle
+                ctx.shadowBlur = 0;
+                ctx.fillStyle = '#60A5FA';
+                ctx.beginPath();
+                ctx.arc(x, y, 30, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Initial
+                ctx.fillStyle = '#FFFFFF';
+                ctx.font = 'bold 20px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(agent.initial, x, y);
+
+                // Name
+                ctx.font = '14px sans-serif';
+                ctx.fillStyle = '#E0E7FF';
+                ctx.fillText(agent.name, x, y + 50);
+
+                // Payment indicator
+                ctx.fillStyle = '#10B981';
+                ctx.beginPath();
+                ctx.arc(x + 20, y - 20, 8, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#FFFFFF';
+                ctx.font = 'bold 12px sans-serif';
+                ctx.fillText('$', x + 20, y - 20);
+            });
+        }
+
+        canvas.addEventListener('click', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const clickY = e.clientY - rect.top;
+
+            for (const agent of mockAgents) {
+                const agentX = (agent.x / 100) * canvas.width;
+                const agentY = (agent.y / 100) * canvas.height;
+                const distance = Math.sqrt(
+                    Math.pow(clickX - agentX, 2) + Math.pow(clickY - agentY, 2)
+                );
+
+                if (distance < 40) {
+                    selectedAgent = agent;
+                    cubeContainer.classList.add('active');
+                    status.textContent = `Selected: ${agent.name} - Payment cube active`;
+                    break;
+                }
+            }
+        });
+
+        cubeContainer.addEventListener('click', () => {
+            alert(`Processing payment for ${selectedAgent.name}!`);
+        });
+
+        window.addEventListener('resize', resizeCanvas);
+
+        // Start!
+        startCamera();
+    </script>
+</body>
+</html>

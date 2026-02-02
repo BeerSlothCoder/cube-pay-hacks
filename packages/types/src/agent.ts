@@ -77,6 +77,11 @@ export interface DeployedObject {
   location: GeoLocation;
   radius_meters?: number;
   placement_type?: "ground" | "floating" | "wall" | "table" | "custom";
+  screen_position?: {
+    x: number; // 0-100 percentage
+    y: number; // 0-100 percentage
+    z_index: number; // Layer order
+  };
 
   // Deployment Control
   status: DeploymentStatus;
