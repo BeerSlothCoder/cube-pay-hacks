@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { CameraView } from './components/CameraView';
 import { AgentOverlay } from './components/AgentOverlay';
 import { PaymentCube } from './components/PaymentCube';
@@ -6,10 +6,15 @@ import { PaymentModal } from './components/PaymentModal';
 import { useAgentStore } from './stores/agentStore';
 import { usePaymentStore } from './stores/paymentStore';
 import { createCubePayDatabase } from '@cubepay/database-client';
+import { Filter, MapPin, Zap } from 'lucide-react';
+
+type FilterType = 'all' | 'crypto_qr' | 'virtual_card' | 'on_off_ramp' | 'ens_payment';
 
 function App() {
-  const { loadAgents } = useAgentStore();
+  const { agents, loadAgents } = useAgentStore();
   const { selectedAgent, showCube, selectAgent } = usePaymentStore();
+  const [filter, setFilter] = useState<FilterType>('all');
+  const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
     const dbClient = createCubePayDatabase(
@@ -27,13 +32,21 @@ function App() {
     payment_enabled: true
   };
 
+  const filterButtons = [
+    { id: 'all', label: 'All Agents', icon: '🎲', color: 'bg-blue-600' },
+    { id: 'crypto_qr', label: 'Crypto QR', icon: '💳', color: 'bg-cyan-600' },
+    { id: 'virtual_card', label: 'Virtual Card', icon: '💰', color: 'bg-purple-600' },
+    { id: 'on_off_ramp', label: 'On/Off Ramp', icon: '🔄', color: 'bg-blue-500' },
+    { id: 'ens_payment', label: 'ENS Pay', icon: '🌐', color: 'bg-yellow-600' },
+  ];
+
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-cubepay-bg">
       {/* Layer 1: Camera View */}
       <CameraView />
 
       {/* Layer 2: Agent Overlay */}
-      <AgentOverlay />
+      <AgentOverlay filter={filter} />
 
       {/* Layer 3: Payment Cube (only when agent selected AND showCube is true) */}
       {showCube && selectedAgent && (
@@ -43,13 +56,71 @@ function App() {
       {/* Layer 4: Payment Modal */}
       <PaymentModal />
 
-      {/* Test Button */}
-      <button
-        onClick={() => selectAgent(testAgent as any)}
-        className="absolute bottom-4 right-4 z-50 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold shadow-lg"
-      >
-        🎲 Show Payment Cube
-      </button>
+      {/* Top Bar - Stats & Info */}
+      <div className="absolute top-0 left-0 right-0 z-40 bg-gradient-to-b from-black to-transparent p-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <div className="bg-cubepay-card px-4 py-2 rounded-lg">
+              <div className="flex items-center space-x-2">
+                <MapPin size={16} className="text-blue-400" />
+                <span className="text-sm text-cubepay-text">{agents.length} agents nearby</span>
+              </div>
+            </div>
+            <div className="bg-cubepay-card px-4 py-2 rounded-lg">
+              <div className="flex items-center space-x-2">
+                <Zap size={16} className="text-green-400" />
+                <span className="text-sm text-cubepay-text">Camera Active</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Filter Toggle Button */}
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className={`px-4 py-2 rounded-lg font-semibold transition-all ${
+              showFilters ? 'bg-blue-600' : 'bg-cubepay-card'
+            }`}
+          >
+            <Filter size={20} />
+          </button>
+        </div>
+
+        {/* Filter Buttons Panel */}
+        {showFilters && (
+          <div className="mt-4 bg-cubepay-card rounded-lg p-4">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+              {filterButtons.map((btn) => (
+                <button
+                  key={btn.id}
+                  onClick={() => setFilter(btn.id as FilterType)}
+                  className={`px-4 py-3 rounded-lg font-semibold transition-all ${
+                    filter === btn.id
+                      ? `${btn.color} text-white shadow-lg scale-105`
+                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                  }`}
+                >
+                  <div className="text-xl mb-1">{btn.icon}</div>
+                  <div className="text-xs">{btn.label}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Bottom Bar - Actions */}
+      <div className="absolute bottom-0 left-0 right-0 z-40 bg-gradient-to-t from-black to-transparent p-4">
+        <div className="flex justify-center space-x-4">
+          {/* Test Button */}
+          <button
+            onClick={() => selectAgent(testAgent as any)}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-xl font-semibold shadow-lg flex items-center space-x-2"
+          >
+            <span className="text-2xl">🎲</span>
+            <span>Test Payment Cube</span>
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
