@@ -4,24 +4,19 @@ import { AgentOverlay } from "./components/AgentOverlay";
 import { PaymentCube } from "./components/PaymentCube";
 import { PaymentModal } from "./components/PaymentModal";
 import { GPSCubeRenderer } from "./components/GPSCubeRenderer";
+import { FilterPanel, type AgentFilters } from "./components/FilterPanel";
 import { useAgentStore } from "./stores/agentStore";
 import { usePaymentStore } from "./stores/paymentStore";
 import { createCubePayDatabase } from "@cubepay/database-client";
-import { Filter, MapPin, Zap, Navigation } from "lucide-react";
+import { Filter, MapPin, Zap, Navigation, X } from "lucide-react";
 
-type FilterType =
-  | "all"
-  | "crypto_qr"
-  | "virtual_card"
-  | "on_off_ramp"
-  | "ens_payment";
 type ViewMode = "screen" | "gps";
 
 function App() {
   const { agents, loadAgents } = useAgentStore();
   const { selectedAgent, showCube, selectAgent } = usePaymentStore();
-  const [filter, setFilter] = useState<FilterType>("all");
-  const [showFilters, setShowFilters] = useState(false);
+  const [showFilterPanel, setShowFilterPanel] = useState(false);
+  const [activeFilters, setActiveFilters] = useState<AgentFilters | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("screen");
   const [userLocation, setUserLocation] = useState<{
     lat: number;
@@ -36,31 +31,20 @@ function App() {
     loadAgents(dbClient);
   }, [loadAgents]);
 
-  // Mock test agent for demo
-  const testAgent = {
-    id: "test-1",
-    agent_name: "Test Agent",
-    screen_position: { x: 50, y: 50, z_index: 1 },
-    payment_enabled: true,
+  const handleFilterChange = (filters: AgentFilters) => {
+    setActiveFilters(filters);
+    console.log("Active filters:", filters);
+    // TODO: Apply filters to agents list
   };
 
-  const filterButtons = [
-    { id: "all", label: "All Agents", icon: "🎲", color: "bg-blue-600" },
-    { id: "crypto_qr", label: "Crypto QR", icon: "💳", color: "bg-cyan-600" },
-    {
-      id: "virtual_card",
-      label: "Virtual Card",
-      icon: "💰",
-      color: "bg-purple-600",
-    },
-    {
-      id: "on_off_ramp",
-      label: "On/Off Ramp",
-      icon: "🔄",
-      color: "bg-blue-500",
-    },
-    { id: "ens_payment", label: "ENS Pay", icon: "🌐", color: "bg-yellow-600" },
-  ];
+  const getActiveFilterCount = () => {
+    if (!activeFilters) return 0;
+    return (
+      activeFilters.agentTypes.length +
+      activeFilters.blockchains.length +
+      activeFilters.paymentMethods.length
+    );
+  };
 
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-cubepay-bg">
@@ -71,13 +55,13 @@ function App() {
 
       {/* Layer 2: Agent Overlay (Screen Mode) or GPS Cubes (GPS Mode) */}
       {viewMode === "screen" ? (
-        <AgentOverlay filter={filter} />
+        <AgentOverlay filter="all" />
       ) : (
         userLocation && (
           <GPSCubeRenderer
             userLatitude={userLocation.lat}
             userLongitude={userLocation.lon}
-            radius={1000}
+            radius={activeFilters?.distanceKm ? activeFilters.distanceKm * 1000 : 1000}
           />
         )
       )}
@@ -87,6 +71,16 @@ function App() {
 
       {/* Layer 4: Payment Modal */}
       <PaymentModal />
+
+      {/* Layer 5: Filter Panel (Side Panel) */}
+      {showFilterPanel && (
+        <div className="fixed right-0 top-0 bottom-0 z-50 shadow-2xl">
+          <FilterPanel
+            onFilterChange={handleFilterChange}
+            onClose={() => setShowFilterPanel(false)}
+          />
+        </div>
+      )}
 
       {/* Top Bar - Stats & Info */}
       <div className="absolute top-0 left-0 right-0 z-40 bg-gradient-to-b from-black to-transparent p-4">
@@ -120,63 +114,61 @@ function App() {
           </div>
 
           <div className="flex items-center gap-2">
+            {/* GPS Location Status */}
+            {userLocation && (
+              <div className="px-3 py-2 bg-cubepay-card rounded-lg text-xs text-gray-400">
+                {userLocation.lat.toFixed(4)}, {userLocation.lon.toFixed(4)}
+              </div>
+            )}
+
             {/* View Mode Toggle */}
             <button
               onClick={() =>
                 setViewMode(viewMode === "screen" ? "gps" : "screen")
               }
-              className="px-4 py-2 rounded-lg font-semibold bg-green-600 hover:bg-green-700 transition-all flex items-center gap-2"
+              className={`px-4 py-2 rounded-lg font-semibold transition-all flex items-center gap-2 ${
+                viewMode === "gps"
+                  ? "bg-green-600 hover:bg-green-700"
+                  : "bg-cubepay-card hover:bg-gray-700"
+              }`}
             >
               <Navigation size={16} />
-              {viewMode === "screen" ? "GPS" : "Screen"}
+              {viewMode === "screen" ? "Enable GPS" : "GPS Active"}
             </button>
 
             {/* Filter Toggle Button */}
             <button
-              onClick={() => setShowFilters(!showFilters)}
-              className={`px-4 py-2 rounded-lg font-semibold transition-all ${
-                showFilters ? "bg-blue-600" : "bg-cubepay-card"
+              onClick={() => setShowFilterPanel(!showFilterPanel)}
+              className={`px-4 py-2 rounded-lg font-semibold transition-all flex items-center gap-2 ${
+                showFilterPanel ? "bg-blue-600" : "bg-cubepay-card hover:bg-gray-700"
               }`}
             >
               <Filter size={20} />
+              {getActiveFilterCount() > 0 && (
+                <span className="px-2 py-0.5 bg-white text-blue-600 text-xs rounded-full font-bold">
+                  {getActiveFilterCount()}
+                </span>
+              )}
             </button>
           </div>
         </div>
-
-        {/* Filter Buttons Panel */}
-        {showFilters && (
-          <div className="mt-4 bg-cubepay-card rounded-lg p-4">
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-              {filterButtons.map((btn) => (
-                <button
-                  key={btn.id}
-                  onClick={() => setFilter(btn.id as FilterType)}
-                  className={`px-4 py-3 rounded-lg font-semibold transition-all ${
-                    filter === btn.id
-                      ? `${btn.color} text-white shadow-lg scale-105`
-                      : "bg-gray-700 text-gray-300 hover:bg-gray-600"
-                  }`}
-                >
-                  <div className="text-xl mb-1">{btn.icon}</div>
-                  <div className="text-xs">{btn.label}</div>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
 
-      {/* Bottom Bar - Actions */}
+      {/* Bottom Info Bar */}
       <div className="absolute bottom-0 left-0 right-0 z-40 bg-gradient-to-t from-black to-transparent p-4">
-        <div className="flex justify-center space-x-4">
-          {/* Test Button */}
-          <button
-            onClick={() => selectAgent(testAgent as any)}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-xl font-semibold shadow-lg flex items-center space-x-2"
-          >
-            <span className="text-2xl">🎲</span>
-            <span>Test Payment Cube</span>
-          </button>
+        <div className="flex justify-center items-center gap-4">
+          {viewMode === "gps" && !userLocation && (
+            <div className="bg-yellow-600 bg-opacity-90 px-4 py-2 rounded-lg flex items-center gap-2">
+              <Navigation size={16} className="animate-pulse" />
+              <span className="text-sm font-semibold">Getting your location...</span>
+            </div>
+          )}
+          {viewMode === "gps" && userLocation && (
+            <div className="bg-green-600 bg-opacity-90 px-4 py-2 rounded-lg flex items-center gap-2">
+              <MapPin size={16} />
+              <span className="text-sm font-semibold">GPS Active - {agents.length} agents nearby</span>
+            </div>
+          )}
         </div>
       </div>
     </div>

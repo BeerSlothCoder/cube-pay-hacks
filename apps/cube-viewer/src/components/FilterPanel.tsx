@@ -7,7 +7,11 @@ const AGENT_TYPES: { value: AgentType; label: string; emoji: string }[] = [
   { value: "ai_avatar", label: "AI Avatar", emoji: "🤖" },
   { value: "ar_portal", label: "AR Portal", emoji: "🌀" },
   { value: "nft_display", label: "NFT Display", emoji: "🖼️" },
-  { value: "interactive_billboard", label: "Interactive Billboard", emoji: "📺" },
+  {
+    value: "interactive_billboard",
+    label: "Interactive Billboard",
+    emoji: "📺",
+  },
   { value: "virtual_assistant", label: "Virtual Assistant", emoji: "💁" },
   { value: "game_character", label: "Game Character", emoji: "🎮" },
   { value: "tour_guide", label: "Tour Guide", emoji: "🗺️" },
@@ -17,8 +21,16 @@ const AGENT_TYPES: { value: AgentType; label: string; emoji: string }[] = [
 ];
 
 const PAYMENT_METHODS = [
-  { value: "direct", label: "Direct Payment", description: "Pay directly on one chain" },
-  { value: "arc", label: "Arc Cross-Chain", description: "Pay from any chain via Circle Arc" },
+  {
+    value: "direct",
+    label: "Direct Payment",
+    description: "Pay directly on one chain",
+  },
+  {
+    value: "arc",
+    label: "Arc Cross-Chain",
+    description: "Pay from any chain via Circle Arc",
+  },
   { value: "ens", label: "ENS Payment", description: "Pay using ENS domain" },
 ];
 
@@ -44,7 +56,10 @@ export interface AgentFilters {
   paymentEnabled?: boolean;
 }
 
-export const FilterPanel: React.FC<FilterPanelProps> = ({ onFilterChange, onClose }) => {
+export const FilterPanel: React.FC<FilterPanelProps> = ({
+  onFilterChange,
+  onClose,
+}) => {
   const [filters, setFilters] = useState<AgentFilters>({
     agentTypes: [],
     blockchains: [],
@@ -139,7 +154,7 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({ onFilterChange, onClos
   const renderSectionHeader = (
     title: string,
     section: keyof typeof expandedSections,
-    count?: number
+    count?: number,
   ) => (
     <button
       type="button"
@@ -197,7 +212,11 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({ onFilterChange, onClos
       <div className="p-4 space-y-4">
         {/* Agent Types */}
         <div>
-          {renderSectionHeader("Agent Types", "agentTypes", filters.agentTypes.length)}
+          {renderSectionHeader(
+            "Agent Types",
+            "agentTypes",
+            filters.agentTypes.length,
+          )}
           {expandedSections.agentTypes && (
             <div className="mt-2 space-y-2">
               {AGENT_TYPES.map((type) => (
@@ -221,7 +240,11 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({ onFilterChange, onClos
 
         {/* Blockchains */}
         <div>
-          {renderSectionHeader("Blockchains", "blockchains", filters.blockchains.length)}
+          {renderSectionHeader(
+            "Blockchains",
+            "blockchains",
+            filters.blockchains.length,
+          )}
           {expandedSections.blockchains && (
             <div className="mt-2 space-y-2 max-h-64 overflow-y-auto">
               {allNetworks.map((network) => (
@@ -236,11 +259,19 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({ onFilterChange, onClos
                     className="w-4 h-4 text-blue-500 rounded focus:ring-2 focus:ring-blue-500"
                   />
                   {network.iconUrl && (
-                    <img src={network.iconUrl} alt={network.displayName} className="w-5 h-5" />
+                    <img
+                      src={network.iconUrl}
+                      alt={network.displayName}
+                      className="w-5 h-5"
+                    />
                   )}
                   <div className="flex-1">
-                    <div className="text-sm text-gray-300">{network.displayName}</div>
-                    <div className="text-xs text-gray-500">Chain {network.chainId}</div>
+                    <div className="text-sm text-gray-300">
+                      {network.displayName}
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      Chain {network.chainId}
+                    </div>
                   </div>
                   {network.isTestnet && (
                     <span className="px-2 py-0.5 bg-yellow-500/20 text-yellow-400 text-xs rounded">
@@ -270,7 +301,9 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({ onFilterChange, onClos
                     className="w-4 h-4 text-blue-500 rounded focus:ring-2 focus:ring-blue-500"
                   />
                   <div className="flex-1">
-                    <div className="text-sm text-gray-300 font-semibold">{token.symbol}</div>
+                    <div className="text-sm text-gray-300 font-semibold">
+                      {token.symbol}
+                    </div>
                     <div className="text-xs text-gray-500">{token.name}</div>
                   </div>
                 </label>
@@ -281,7 +314,11 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({ onFilterChange, onClos
 
         {/* Payment Methods */}
         <div>
-          {renderSectionHeader("Payment Methods", "payment", filters.paymentMethods.length)}
+          {renderSectionHeader(
+            "Payment Methods",
+            "payment",
+            filters.paymentMethods.length,
+          )}
           {expandedSections.payment && (
             <div className="mt-2 space-y-2">
               {PAYMENT_METHODS.map((method) => (
@@ -297,7 +334,9 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({ onFilterChange, onClos
                   />
                   <div className="flex-1">
                     <div className="text-sm text-gray-300">{method.label}</div>
-                    <div className="text-xs text-gray-500">{method.description}</div>
+                    <div className="text-xs text-gray-500">
+                      {method.description}
+                    </div>
                   </div>
                 </label>
               ))}
@@ -322,7 +361,9 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({ onFilterChange, onClos
                 max="10"
                 step="0.1"
                 value={filters.distanceKm}
-                onChange={(e) => updateFilters({ distanceKm: parseFloat(e.target.value) })}
+                onChange={(e) =>
+                  updateFilters({ distanceKm: parseFloat(e.target.value) })
+                }
                 className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
               />
               <div className="flex justify-between text-xs text-gray-500">
@@ -341,24 +382,34 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({ onFilterChange, onClos
             <div className="mt-2 px-2 space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs text-gray-400 mb-1">Min Fee (%)</label>
+                  <label className="block text-xs text-gray-400 mb-1">
+                    Min Fee (%)
+                  </label>
                   <input
                     type="number"
                     min="0"
                     max={filters.feeMax}
                     value={filters.feeMin}
-                    onChange={(e) => updateFilters({ feeMin: parseFloat(e.target.value) || 0 })}
+                    onChange={(e) =>
+                      updateFilters({ feeMin: parseFloat(e.target.value) || 0 })
+                    }
                     className="w-full px-2 py-1 bg-gray-800 border border-gray-700 rounded text-cream text-sm focus:outline-none focus:border-blue-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-400 mb-1">Max Fee (%)</label>
+                  <label className="block text-xs text-gray-400 mb-1">
+                    Max Fee (%)
+                  </label>
                   <input
                     type="number"
                     min={filters.feeMin}
                     max="100"
                     value={filters.feeMax}
-                    onChange={(e) => updateFilters({ feeMax: parseFloat(e.target.value) || 100 })}
+                    onChange={(e) =>
+                      updateFilters({
+                        feeMax: parseFloat(e.target.value) || 100,
+                      })
+                    }
                     className="w-full px-2 py-1 bg-gray-800 border border-gray-700 rounded text-cream text-sm focus:outline-none focus:border-blue-500"
                   />
                 </div>
@@ -377,7 +428,9 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({ onFilterChange, onClos
                 <input
                   type="checkbox"
                   checked={filters.cubeEnabled}
-                  onChange={(e) => updateFilters({ cubeEnabled: e.target.checked })}
+                  onChange={(e) =>
+                    updateFilters({ cubeEnabled: e.target.checked })
+                  }
                   className="w-4 h-4 text-blue-500 rounded focus:ring-2 focus:ring-blue-500"
                 />
               </label>
@@ -386,7 +439,9 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({ onFilterChange, onClos
                 <input
                   type="checkbox"
                   checked={filters.paymentEnabled}
-                  onChange={(e) => updateFilters({ paymentEnabled: e.target.checked })}
+                  onChange={(e) =>
+                    updateFilters({ paymentEnabled: e.target.checked })
+                  }
                   className="w-4 h-4 text-blue-500 rounded focus:ring-2 focus:ring-blue-500"
                 />
               </label>
@@ -398,7 +453,8 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({ onFilterChange, onClos
       {/* Filter Summary */}
       <div className="sticky bottom-0 bg-gray-900 border-t border-gray-800 p-4">
         <div className="text-xs text-gray-400 text-center">
-          {getActiveFilterCount()} active filter{getActiveFilterCount() !== 1 ? "s" : ""}
+          {getActiveFilterCount()} active filter
+          {getActiveFilterCount() !== 1 ? "s" : ""}
         </div>
       </div>
     </div>
