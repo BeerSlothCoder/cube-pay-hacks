@@ -2,6 +2,7 @@
 
 > **🏆 ETHGlobal Bangkok 2024 Hackathon**  
 > **Bounties:**
+>
 > - **Circle:** Best Chain Abstracted USDC Apps Using Arc ($5,000)
 > - **ENS:** Integrate ENS ($3,500 pool split)
 > - **ENS:** Most Creative Use for DeFi ($1,500)
@@ -23,6 +24,7 @@ CubePay is the world's first **AR-native, chain-abstracted payment system** that
 ## ✅ Hackathon Features
 
 ### Circle Integration ✅
+
 - ✅ **Arc** - L1 blockchain as liquidity hub for cross-chain routing
 - ✅ **Circle Gateway** - Cross-chain transfer protocol implementation
 - ✅ **USDC** - Primary payment token across 12 chains
@@ -31,6 +33,7 @@ CubePay is the world's first **AR-native, chain-abstracted payment system** that
 [**📄 Full Circle Documentation →**](./CIRCLE_INTEGRATION.md)
 
 ### ENS Integration ✅
+
 - ✅ **Text Records** - Payment preferences stored in ENS (`com.cubepay.*` schema)
 - ✅ **Multi-Chain Addresses** - Different USDC addresses per chain in ENS
 - ✅ **Agent Profiles** - Decentralized profiles via IPFS content hash
