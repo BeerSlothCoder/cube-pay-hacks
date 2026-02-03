@@ -1,4 +1,4 @@
-import { createCubePayDatabase } from '@cubepay/database-client';
+import { createCubePayDatabase } from "@cubepay/database-client";
 
 export interface PaymentSessionData {
   agent_id: string;
@@ -8,7 +8,7 @@ export interface PaymentSessionData {
   token: string;
   chain_id: number;
   transaction_hash: string;
-  status: 'pending' | 'processing' | 'confirmed' | 'failed';
+  status: "pending" | "processing" | "confirmed" | "failed";
   payment_face: string;
   error_message?: string;
 }
@@ -16,11 +16,13 @@ export interface PaymentSessionData {
 /**
  * Create a new payment session in the database
  */
-export async function createPaymentSession(data: PaymentSessionData): Promise<string | null> {
+export async function createPaymentSession(
+  data: PaymentSessionData,
+): Promise<string | null> {
   try {
     const db = createCubePayDatabase(
-      process.env.VITE_SUPABASE_URL || '',
-      process.env.VITE_SUPABASE_ANON_KEY || ''
+      process.env.VITE_SUPABASE_URL || "",
+      process.env.VITE_SUPABASE_ANON_KEY || "",
     );
 
     const result = await db.paymentSessions.create({
@@ -39,7 +41,7 @@ export async function createPaymentSession(data: PaymentSessionData): Promise<st
 
     return result?.id || null;
   } catch (error) {
-    console.error('Failed to create payment session:', error);
+    console.error("Failed to create payment session:", error);
     return null;
   }
 }
@@ -50,16 +52,16 @@ export async function createPaymentSession(data: PaymentSessionData): Promise<st
 export async function updatePaymentSession(
   sessionId: string,
   updates: {
-    status?: 'pending' | 'processing' | 'confirmed' | 'failed';
+    status?: "pending" | "processing" | "confirmed" | "failed";
     transaction_hash?: string;
     error_message?: string;
     block_number?: number;
-  }
+  },
 ): Promise<boolean> {
   try {
     const db = createCubePayDatabase(
-      process.env.VITE_SUPABASE_URL || '',
-      process.env.VITE_SUPABASE_ANON_KEY || ''
+      process.env.VITE_SUPABASE_URL || "",
+      process.env.VITE_SUPABASE_ANON_KEY || "",
     );
 
     await db.paymentSessions.update(sessionId, {
@@ -69,7 +71,7 @@ export async function updatePaymentSession(
 
     return true;
   } catch (error) {
-    console.error('Failed to update payment session:', error);
+    console.error("Failed to update payment session:", error);
     return false;
   }
 }
@@ -79,24 +81,24 @@ export async function updatePaymentSession(
  */
 export async function getAgentPaymentSessions(
   agentId: string,
-  limit: number = 50
+  limit: number = 50,
 ): Promise<any[]> {
   try {
     const db = createCubePayDatabase(
-      process.env.VITE_SUPABASE_URL || '',
-      process.env.VITE_SUPABASE_ANON_KEY || ''
+      process.env.VITE_SUPABASE_URL || "",
+      process.env.VITE_SUPABASE_ANON_KEY || "",
     );
 
     const sessions = await db.paymentSessions.list({
       filters: { agent_id: agentId },
       limit,
-      orderBy: 'created_at',
-      order: 'desc',
+      orderBy: "created_at",
+      order: "desc",
     });
 
     return sessions || [];
   } catch (error) {
-    console.error('Failed to get payment sessions:', error);
+    console.error("Failed to get payment sessions:", error);
     return [];
   }
 }
@@ -105,12 +107,12 @@ export async function getAgentPaymentSessions(
  * Get payment session by transaction hash
  */
 export async function getPaymentSessionByTxHash(
-  transactionHash: string
+  transactionHash: string,
 ): Promise<any | null> {
   try {
     const db = createCubePayDatabase(
-      process.env.VITE_SUPABASE_URL || '',
-      process.env.VITE_SUPABASE_ANON_KEY || ''
+      process.env.VITE_SUPABASE_URL || "",
+      process.env.VITE_SUPABASE_ANON_KEY || "",
     );
 
     const sessions = await db.paymentSessions.list({
@@ -120,7 +122,7 @@ export async function getPaymentSessionByTxHash(
 
     return sessions?.[0] || null;
   } catch (error) {
-    console.error('Failed to get payment session:', error);
+    console.error("Failed to get payment session:", error);
     return null;
   }
 }

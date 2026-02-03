@@ -3,18 +3,22 @@ import { CameraView } from './components/CameraView';
 import { AgentOverlay } from './components/AgentOverlay';
 import { PaymentCube } from './components/PaymentCube';
 import { PaymentModal } from './components/PaymentModal';
+import { GPSCubeRenderer } from './components/GPSCubeRenderer';
 import { useAgentStore } from './stores/agentStore';
 import { usePaymentStore } from './stores/paymentStore';
 import { createCubePayDatabase } from '@cubepay/database-client';
-import { Filter, MapPin, Zap } from 'lucide-react';
+import { Filter, MapPin, Zap, Navigation } from 'lucide-react';
 
 type FilterType = 'all' | 'crypto_qr' | 'virtual_card' | 'on_off_ramp' | 'ens_payment';
+type ViewMode = 'screen' | 'gps';
 
 function App() {
   const { agents, loadAgents } = useAgentStore();
   const { selectedAgent, showCube, selectAgent } = usePaymentStore();
   const [filter, setFilter] = useState<FilterType>('all');
   const [showFilters, setShowFilters] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>('screen');
+  const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null);
 
   useEffect(() => {
     const dbClient = createCubePayDatabase(
@@ -43,10 +47,20 @@ function App() {
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-cubepay-bg">
       {/* Layer 1: Camera View */}
-      <CameraView />
+      <CameraView onLocationUpdate={(lat, lon) => setUserLocation({ lat, lon })} />
 
-      {/* Layer 2: Agent Overlay */}
-      <AgentOverlay filter={filter} />
+      {/* Layer 2: Agent Overlay (Screen Mode) or GPS Cubes (GPS Mode) */}
+      {viewMode === 'screen' ? (
+        <AgentOverlay filter={filter} />
+      ) : (
+        userLocation && (
+          <GPSCubeRenderer
+            userLatitude={userLocation.lat}
+            userLongitude={userLocation.lon}
+            radius={1000}
+          />
+        )
+      )}
 
       {/* Layer 3: Payment Cube (only when agent selected AND showCube is true) */}
       {showCube && selectedAgent && (
@@ -68,21 +82,41 @@ function App() {
             </div>
             <div className="bg-cubepay-card px-4 py-2 rounded-lg">
               <div className="flex items-center space-x-2">
-                <Zap size={16} className="text-green-400" />
-                <span className="text-sm text-cubepay-text">Camera Active</span>
+                {viewMode === 'gps' ? (
+                  <>
+                    <Navigation size={16} className="text-green-400" />
+                    <span className="text-sm text-cubepay-text">GPS Mode</span>
+                  </>
+                ) : (
+                  <>
+                    <Zap size={16} className="text-green-400" />
+                    <span className="text-sm text-cubepay-text">Screen Mode</span>
+                  </>
+                )}
               </div>
             </div>
           </div>
 
-          {/* Filter Toggle Button */}
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className={`px-4 py-2 rounded-lg font-semibold transition-all ${
-              showFilters ? 'bg-blue-600' : 'bg-cubepay-card'
-            }`}
-          >
-            <Filter size={20} />
-          </button>
+          <div className="flex items-center gap-2">
+            {/* View Mode Toggle */}
+            <button
+              onClick={() => setViewMode(viewMode === 'screen' ? 'gps' : 'screen')}
+              className="px-4 py-2 rounded-lg font-semibold bg-green-600 hover:bg-green-700 transition-all flex items-center gap-2"
+            >
+              <Navigation size={16} />
+              {viewMode === 'screen' ? 'GPS' : 'Screen'}
+            </button>
+
+            {/* Filter Toggle Button */}
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={`px-4 py-2 rounded-lg font-semibold transition-all ${
+                showFilters ? 'bg-blue-600' : 'bg-cubepay-card'
+              }`}
+            >
+              <Filter size={20} />
+            </button>
+          </div>
         </div>
 
         {/* Filter Buttons Panel */}

@@ -1,11 +1,18 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useGeolocation } from '../hooks/useGeolocation';
+import { MapPin, Navigation } from 'lucide-react';
 
-export const CameraView: React.FC = () => {
+interface CameraViewProps {
+  onLocationUpdate?: (lat: number, lon: number) => void;
+}
+
+export const CameraView: React.FC<CameraViewProps> = ({ onLocationUpdate }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [error, setError] = useState<string>('');
   const [cameraActive, setCameraActive] = useState(false);
   const [useFallback, setUseFallback] = useState(false);
+  const { position, error: gpsError, loading: gpsLoading } = useGeolocation();
 
   useEffect(() => {
     const startCamera = async () => {
@@ -43,6 +50,13 @@ export const CameraView: React.FC = () => {
       }
     };
   }, []);
+
+  // Update parent component with GPS position
+  useEffect(() => {
+    if (position && onLocationUpdate) {
+      onLocationUpdate(position.latitude, position.longitude);
+    }
+  }, [position, onLocationUpdate]);
 
   useEffect(() => {
     if (!useFallback || !canvasRef.current) return;
@@ -124,16 +138,52 @@ export const CameraView: React.FC = () => {
         <canvas ref={canvasRef} className="w-full h-full" />
       )}
 
-      {/* Status indicator */}
-      <div className="absolute top-4 left-4 flex items-center gap-2 bg-black bg-opacity-50 px-3 py-2 rounded-lg">
-        <div className={`w-3 h-3 rounded-full ${
-          cameraActive ? 'bg-green-500' : 
-          useFallback ? 'bg-yellow-500' : 
-          error ? 'bg-red-500' : 'bg-blue-500'
-        }`} />
-        <span className="text-white text-sm font-medium">
-          {cameraActive ? 'Camera Active' : 
-           useFallback ? 'AR Demo Mode' : 
+      {/* Status indicators */}
+      <div className="absolute top-4 left-4 space-y-2">
+        {/* Camera status */}
+        <div className="flex items-center gap-2 bg-black bg-opacity-50 px-3 py-2 rounded-lg">
+          <div className={`w-3 h-3 rounded-full ${
+            cameraActive ? 'bg-green-500' : 
+            useFallback ? 'bg-yellow-500' : 
+            error ? 'bg-red-500' : 'bg-blue-500'
+          }`} />
+          <span className="text-white text-sm font-medium">
+            {cameraActive ? 'Camera Active' : 
+             useFallback ? 'AR Demo Mode' : 
+             error ? 'Camera Error' : 'Initializing...'}
+          </span>
+        </div>
+
+        {/* GPS status */}
+        {position && (
+          <div className="flex items-center gap-2 bg-black bg-opacity-50 px-3 py-2 rounded-lg">
+            <MapPin size={16} className="text-green-500" />
+            <span className="text-white text-xs font-mono">
+              {position.latitude.toFixed(6)}, {position.longitude.toFixed(6)}
+            </span>
+          </div>
+        )}
+
+        {/* GPS accuracy */}
+        {position && (
+          <div className="flex items-center gap-2 bg-black bg-opacity-50 px-3 py-2 rounded-lg">
+            <Navigation size={16} className="text-blue-400" />
+            <span className="text-white text-xs">
+              Accuracy: ±{position.accuracy.toFixed(0)}m
+            </span>
+          </div>
+        )}
+
+        {/* GPS error */}
+        {gpsError && (
+          <div className="flex items-center gap-2 bg-red-900 bg-opacity-50 px-3 py-2 rounded-lg border border-red-600">
+            <MapPin size={16} className="text-red-400" />
+            <span className="text-white text-xs">
+              GPS Error: {gpsError.message}
+            </span>
+          </div>
+        )}
+      </div> 
            error ? 'Camera Error' : 'Requesting Camera...'}
         </span>
       </div>

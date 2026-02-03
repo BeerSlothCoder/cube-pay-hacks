@@ -1,46 +1,61 @@
-import React, { useState, useEffect } from 'react';
-import { usePaymentStore } from '../stores/paymentStore';
-import { X, Wallet, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
-import QRCode from 'qrcode';
-import { WalletConnector } from '@cubepay/wallet-connector';
-import { executeEVMUSDCPayment, executeSolanaUSDCPayment } from '@cubepay/wallet-connector';
-import type { PaymentExecutionResult } from '@cubepay/wallet-connector';
-import { createPaymentSession, updatePaymentSession } from '../utils/paymentSessions';
+import React, { useState, useEffect } from "react";
+import { usePaymentStore } from "../stores/paymentStore";
+import { X, Wallet, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
+import QRCode from "qrcode";
+import { WalletConnector } from "@cubepay/wallet-connector";
+import {
+  executeEVMUSDCPayment,
+  executeSolanaUSDCPayment,
+} from "@cubepay/wallet-connector";
+import type { PaymentExecutionResult } from "@cubepay/wallet-connector";
+import {
+  createPaymentSession,
+  updatePaymentSession,
+} from "../utils/paymentSessions";
 
 export const PaymentModal: React.FC = () => {
-  const { selectedPaymentFace, selectedAgent, closePaymentModal } = usePaymentStore();
-  const [qrCodeUrl, setQrCodeUrl] = useState('');
+  const { selectedPaymentFace, selectedAgent, closePaymentModal } =
+    usePaymentStore();
+  const [qrCodeUrl, setQrCodeUrl] = useState("");
   const [walletConnector] = useState(() => new WalletConnector());
   const [isWalletConnected, setIsWalletConnected] = useState(false);
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
-  const [paymentAmount, setPaymentAmount] = useState('10');
+  const [paymentAmount, setPaymentAmount] = useState("10");
   const [selectedChain, setSelectedChain] = useState<number>(11155111); // Ethereum Sepolia
-  const [paymentStatus, setPaymentStatus] = useState<'idle' | 'connecting' | 'processing' | 'success' | 'error'>('idle');
+  const [paymentStatus, setPaymentStatus] = useState<
+    "idle" | "connecting" | "processing" | "success" | "error"
+  >("idle");
   const [transactionHash, setTransactionHash] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    if (selectedPaymentFace === 'crypto_qr' && selectedAgent) {
+    if (selectedPaymentFace === "crypto_qr" && selectedAgent) {
       // Generate QR code for agent's wallet address
-      const agentWallet = selectedAgent.agent_wallet || '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb';
-      QRCode.toDataURL(`ethereum:${agentWallet}@${selectedChain}?value=${paymentAmount}`)
-        .then(url => setQrCodeUrl(url))
-        .catch(err => console.error('QR Code generation error:', err));
+      const agentWallet =
+        selectedAgent.agent_wallet ||
+        "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb";
+      QRCode.toDataURL(
+        `ethereum:${agentWallet}@${selectedChain}?value=${paymentAmount}`,
+      )
+        .then((url) => setQrCodeUrl(url))
+        .catch((err) => console.error("QR Code generation error:", err));
     }
   }, [selectedPaymentFace, selectedAgent, selectedChain, paymentAmount]);
 
   // Connect wallet
-  const handleConnectWallet = async (walletType: 'metamask' | 'phantom' | 'hashpack') => {
-    setPaymentStatus('connecting');
+  const handleConnectWallet = async (
+    walletType: "metamask" | "phantom" | "hashpack",
+  ) => {
+    setPaymentStatus("connecting");
     setErrorMessage(null);
-    
+
     try {
       const state = await walletConnector.connect(walletType);
       setIsWalletConnected(true);
       setWalletAddress(state.address);
-      setPaymentStatus('idle');
+      setPaymentStatus("idle");
     } catch (error) {
-      setPaymentStatus('error');
+      setPaymentStatus("error");
       setErrorMessage((error as Error).message);
     }
   };
@@ -48,11 +63,11 @@ export const PaymentModal: React.FC = () => {
   // Execute payment
   const handlePayment = async () => {
     if (!isWalletConnected || !selectedAgent || !walletAddress) {
-      setErrorMessage('Please connect your wallet first');
+      setErrorMessage("Please connect your wallet first");
       return;
     }
 
-    setPaymentStatus('processing');
+    setPaymentStatus("processing");
     setErrorMessage(null);
 
     try {
@@ -65,12 +80,12 @@ export const PaymentModal: React.FC = () => {
           selectedAgent.agent_wallet!,
           parseFloat(paymentAmount),
           (window as any).phantom?.solana,
-          'devnet'
+          "devnet",
         );
       } else if (selectedChain === 295) {
         // Hedera
-        setErrorMessage('Hedera payments coming soon');
-        setPaymentStatus('idle');
+        setErrorMessage("Hedera payments coming soon");
+        setPaymentStatus("idle");
         return;
       } else {
         // EVM chains
@@ -78,24 +93,24 @@ export const PaymentModal: React.FC = () => {
           selectedChain,
           selectedAgent.agent_wallet!,
           parseFloat(paymentAmount),
-          (window as any).ethereum
+          (window as any).ethereum,
         );
       }
 
       if (result.success) {
-        setPaymentStatus('success');
+        setPaymentStatus("success");
         setTransactionHash(result.transactionHash);
-        
+
         // Create payment session in database
         const sessionId = await createPaymentSession({
           agent_id: selectedAgent.id,
           payer_wallet: walletAddress,
           recipient_wallet: selectedAgent.agent_wallet!,
           amount: parseFloat(paymentAmount),
-          token: 'USDC',
+          token: "USDC",
           chain_id: selectedChain,
           transaction_hash: result.transactionHash,
-          status: result.status === 'confirmed' ? 'confirmed' : 'pending',
+          status: result.status === "confirmed" ? "confirmed" : "pending",
           payment_face: selectedPaymentFace,
         });
 
@@ -106,25 +121,25 @@ export const PaymentModal: React.FC = () => {
           });
         }
       } else {
-        setPaymentStatus('error');
-        setErrorMessage(result.error || 'Payment failed');
-        
+        setPaymentStatus("error");
+        setErrorMessage(result.error || "Payment failed");
+
         // Log failed payment
         await createPaymentSession({
           agent_id: selectedAgent.id,
           payer_wallet: walletAddress,
           recipient_wallet: selectedAgent.agent_wallet!,
           amount: parseFloat(paymentAmount),
-          token: 'USDC',
+          token: "USDC",
           chain_id: selectedChain,
-          transaction_hash: result.transactionHash || 'failed',
-          status: 'failed',
+          transaction_hash: result.transactionHash || "failed",
+          status: "failed",
           payment_face: selectedPaymentFace,
           error_message: result.error,
         });
       }
     } catch (error) {
-      setPaymentStatus('error');
+      setPaymentStatus("error");
       setErrorMessage((error as Error).message);
     }
   };
@@ -133,34 +148,34 @@ export const PaymentModal: React.FC = () => {
 
   const faceConfigs = {
     crypto_qr: {
-      title: 'Crypto QR Payment',
-      color: '#00D4FF',
-      description: 'Scan this QR code with your crypto wallet'
+      title: "Crypto QR Payment",
+      color: "#00D4FF",
+      description: "Scan this QR code with your crypto wallet",
     },
     virtual_card: {
-      title: 'Virtual Card Payment',
-      color: '#7C3AED',
-      description: 'Use your virtual card to complete the payment'
+      title: "Virtual Card Payment",
+      color: "#7C3AED",
+      description: "Use your virtual card to complete the payment",
     },
     on_off_ramp: {
-      title: 'On/Off Ramp',
-      color: '#3B82F6',
-      description: 'Convert between fiat and crypto'
+      title: "On/Off Ramp",
+      color: "#3B82F6",
+      description: "Convert between fiat and crypto",
     },
     ens_payment: {
-      title: 'ENS Payment',
-      color: '#F59E0B',
-      description: 'Pay using your ENS domain'
+      title: "ENS Payment",
+      color: "#F59E0B",
+      description: "Pay using your ENS domain",
     },
     sound_pay: {
-      title: 'Sound Pay',
-      color: '#64748B',
-      description: 'Pay using sound waves'
+      title: "Sound Pay",
+      color: "#64748B",
+      description: "Pay using sound waves",
     },
     voice_pay: {
-      title: 'Voice Pay',
-      color: '#64748B',
-      description: 'Pay using voice commands'
+      title: "Voice Pay",
+      color: "#64748B",
+      description: "Pay using voice commands",
     },
   };
 
@@ -168,14 +183,14 @@ export const PaymentModal: React.FC = () => {
 
   // Chain configurations
   const chains = [
-    { id: 11155111, name: 'Ethereum Sepolia', symbol: 'ETH' },
-    { id: 84532, name: 'Base Sepolia', symbol: 'ETH' },
-    { id: 421614, name: 'Arbitrum Sepolia', symbol: 'ETH' },
-    { id: 11155420, name: 'Optimism Sepolia', symbol: 'ETH' },
-    { id: 80002, name: 'Polygon Amoy', symbol: 'MATIC' },
-    { id: 43113, name: 'Avalanche Fuji', symbol: 'AVAX' },
-    { id: 97, name: 'BNB Testnet', symbol: 'BNB' },
-    { id: 900, name: 'Solana Devnet', symbol: 'SOL' },
+    { id: 11155111, name: "Ethereum Sepolia", symbol: "ETH" },
+    { id: 84532, name: "Base Sepolia", symbol: "ETH" },
+    { id: 421614, name: "Arbitrum Sepolia", symbol: "ETH" },
+    { id: 11155420, name: "Optimism Sepolia", symbol: "ETH" },
+    { id: 80002, name: "Polygon Amoy", symbol: "MATIC" },
+    { id: 43113, name: "Avalanche Fuji", symbol: "AVAX" },
+    { id: 97, name: "BNB Testnet", symbol: "BNB" },
+    { id: 900, name: "Solana Devnet", symbol: "SOL" },
   ];
 
   // Render wallet connection section
@@ -183,26 +198,28 @@ export const PaymentModal: React.FC = () => {
     <div className="space-y-4">
       {!isWalletConnected ? (
         <>
-          <p className="text-cubepay-text-secondary text-sm mb-4">Connect your wallet to continue</p>
+          <p className="text-cubepay-text-secondary text-sm mb-4">
+            Connect your wallet to continue
+          </p>
           <div className="grid grid-cols-2 gap-3">
             <button
-              onClick={() => handleConnectWallet('metamask')}
-              disabled={paymentStatus === 'connecting'}
+              onClick={() => handleConnectWallet("metamask")}
+              disabled={paymentStatus === "connecting"}
               className="flex items-center justify-center gap-2 bg-orange-600 hover:bg-orange-700 disabled:bg-gray-600 text-white py-3 rounded-lg font-semibold transition-colors"
             >
               <Wallet size={20} />
               MetaMask
             </button>
             <button
-              onClick={() => handleConnectWallet('phantom')}
-              disabled={paymentStatus === 'connecting'}
+              onClick={() => handleConnectWallet("phantom")}
+              disabled={paymentStatus === "connecting"}
               className="flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 text-white py-3 rounded-lg font-semibold transition-colors"
             >
               <Wallet size={20} />
               Phantom
             </button>
           </div>
-          {paymentStatus === 'connecting' && (
+          {paymentStatus === "connecting" && (
             <div className="flex items-center justify-center gap-2 text-cubepay-text-secondary">
               <Loader2 className="animate-spin" size={16} />
               <span>Connecting wallet...</span>
@@ -228,13 +245,15 @@ export const PaymentModal: React.FC = () => {
     <div className="space-y-4">
       {/* Chain Selector */}
       <div>
-        <label className="block text-sm text-cubepay-text-secondary mb-2">Network</label>
+        <label className="block text-sm text-cubepay-text-secondary mb-2">
+          Network
+        </label>
         <select
           value={selectedChain}
           onChange={(e) => setSelectedChain(Number(e.target.value))}
           className="w-full bg-cubepay-card text-cubepay-text px-4 py-3 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
         >
-          {chains.map(chain => (
+          {chains.map((chain) => (
             <option key={chain.id} value={chain.id}>
               {chain.name} ({chain.symbol})
             </option>
@@ -244,7 +263,9 @@ export const PaymentModal: React.FC = () => {
 
       {/* Amount Input */}
       <div>
-        <label className="block text-sm text-cubepay-text-secondary mb-2">Amount (USDC)</label>
+        <label className="block text-sm text-cubepay-text-secondary mb-2">
+          Amount (USDC)
+        </label>
         <input
           type="number"
           value={paymentAmount}
@@ -258,10 +279,10 @@ export const PaymentModal: React.FC = () => {
       {/* Pay Button */}
       <button
         onClick={handlePayment}
-        disabled={!isWalletConnected || paymentStatus === 'processing'}
+        disabled={!isWalletConnected || paymentStatus === "processing"}
         className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white py-4 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2"
       >
-        {paymentStatus === 'processing' ? (
+        {paymentStatus === "processing" ? (
           <>
             <Loader2 className="animate-spin" size={20} />
             Processing Payment...
@@ -275,14 +296,16 @@ export const PaymentModal: React.FC = () => {
 
   // Render transaction status
   const renderTransactionStatus = () => {
-    if (paymentStatus === 'success' && transactionHash) {
+    if (paymentStatus === "success" && transactionHash) {
       return (
         <div className="bg-green-900 bg-opacity-30 border border-green-600 rounded-lg p-4">
           <div className="flex items-center gap-2 text-green-400 mb-3">
             <CheckCircle size={24} />
             <span className="font-semibold text-lg">Payment Successful!</span>
           </div>
-          <p className="text-cubepay-text-secondary text-sm mb-2">Transaction Hash:</p>
+          <p className="text-cubepay-text-secondary text-sm mb-2">
+            Transaction Hash:
+          </p>
           <p className="text-cubepay-text text-xs font-mono break-all bg-cubepay-card p-2 rounded">
             {transactionHash}
           </p>
@@ -298,7 +321,7 @@ export const PaymentModal: React.FC = () => {
       );
     }
 
-    if (paymentStatus === 'error' && errorMessage) {
+    if (paymentStatus === "error" && errorMessage) {
       return (
         <div className="bg-red-900 bg-opacity-30 border border-red-600 rounded-lg p-4">
           <div className="flex items-center gap-2 text-red-400 mb-2">
@@ -314,7 +337,10 @@ export const PaymentModal: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center" style={{ zIndex: 30 }}>
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"
+      style={{ zIndex: 30 }}
+    >
       <div className="bg-cubepay-bg rounded-2xl p-6 max-w-md w-full mx-4 relative">
         {/* Close button */}
         <button
@@ -326,16 +352,20 @@ export const PaymentModal: React.FC = () => {
 
         {/* Header */}
         <div className="mb-6">
-          <h2 className="text-2xl font-bold text-cubepay-text mb-2">{config.title}</h2>
+          <h2 className="text-2xl font-bold text-cubepay-text mb-2">
+            {config.title}
+          </h2>
           <p className="text-cubepay-text-secondary">{config.description}</p>
-          <p className="text-sm text-cubepay-text-secondary mt-1">Agent: {selectedAgent.agent_name}</p>
+          <p className="text-sm text-cubepay-text-secondary mt-1">
+            Agent: {selectedAgent.agent_name}
+          </p>
         </div>
 
         {/* Content based on payment face */}
-        {selectedPaymentFace === 'crypto_qr' && (
+        {selectedPaymentFace === "crypto_qr" && (
           <div className="space-y-6">
             {renderWalletConnection()}
-            
+
             {isWalletConnected && (
               <>
                 {renderPaymentForm()}
@@ -344,10 +374,16 @@ export const PaymentModal: React.FC = () => {
             )}
 
             <div className="border-t border-cubepay-text-secondary pt-4">
-              <p className="text-cubepay-text-secondary text-sm text-center mb-3">Or scan QR code</p>
+              <p className="text-cubepay-text-secondary text-sm text-center mb-3">
+                Or scan QR code
+              </p>
               {qrCodeUrl && (
                 <div className="flex flex-col items-center">
-                  <img src={qrCodeUrl} alt="Payment QR Code" className="w-48 h-48 border-2 border-cubepay-text-secondary rounded-lg" />
+                  <img
+                    src={qrCodeUrl}
+                    alt="Payment QR Code"
+                    className="w-48 h-48 border-2 border-cubepay-text-secondary rounded-lg"
+                  />
                   <p className="text-xs text-cubepay-text-secondary text-center font-mono mt-2 break-all">
                     {selectedAgent.agent_wallet?.slice(0, 20)}...
                   </p>
@@ -357,7 +393,7 @@ export const PaymentModal: React.FC = () => {
           </div>
         )}
 
-        {selectedPaymentFace === 'virtual_card' && (
+        {selectedPaymentFace === "virtual_card" && (
           <div className="space-y-4">
             <div className="bg-gradient-to-br from-purple-600 to-purple-900 rounded-xl p-6 text-white">
               <p className="text-sm opacity-75 mb-4">Virtual Card</p>
@@ -379,7 +415,7 @@ export const PaymentModal: React.FC = () => {
           </div>
         )}
 
-        {selectedPaymentFace === 'on_off_ramp' && (
+        {selectedPaymentFace === "on_off_ramp" && (
           <div className="space-y-4">
             <div className="flex gap-2">
               <button className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-semibold">
@@ -390,7 +426,9 @@ export const PaymentModal: React.FC = () => {
               </button>
             </div>
             <div className="bg-cubepay-card p-4 rounded-lg">
-              <p className="text-cubepay-text-secondary text-sm mb-2">Convert</p>
+              <p className="text-cubepay-text-secondary text-sm mb-2">
+                Convert
+              </p>
               <div className="flex items-center justify-between">
                 <input
                   type="number"
@@ -407,7 +445,7 @@ export const PaymentModal: React.FC = () => {
           </div>
         )}
 
-        {selectedPaymentFace === 'ens_payment' && (
+        {selectedPaymentFace === "ens_payment" && (
           <div className="space-y-4">
             <input
               type="text"
@@ -420,10 +458,15 @@ export const PaymentModal: React.FC = () => {
           </div>
         )}
 
-        {(selectedPaymentFace === 'sound_pay' || selectedPaymentFace === 'voice_pay') && (
+        {(selectedPaymentFace === "sound_pay" ||
+          selectedPaymentFace === "voice_pay") && (
           <div className="text-center py-8">
-            <p className="text-cubepay-text-secondary text-lg">Coming soon...</p>
-            <p className="text-cubepay-text-secondary text-sm mt-2">This payment method is under development</p>
+            <p className="text-cubepay-text-secondary text-lg">
+              Coming soon...
+            </p>
+            <p className="text-cubepay-text-secondary text-sm mt-2">
+              This payment method is under development
+            </p>
           </div>
         )}
       </div>
