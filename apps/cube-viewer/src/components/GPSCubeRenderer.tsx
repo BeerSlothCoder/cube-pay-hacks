@@ -1,17 +1,17 @@
-import React, { useEffect, useState } from 'react';
-import { Canvas } from '@react-three/fiber';
-import { useNearbyCubes, calculateBearing } from '../hooks/useNearbyCubes';
-import { usePaymentStore } from '../stores/paymentStore';
-import { gpsTo3DPosition } from '@cubepay/payment-cube';
-import * as THREE from 'three';
-import { Text } from '@react-three/drei';
+import React, { useEffect, useState } from "react";
+import { Canvas } from "@react-three/fiber";
+import { useNearbyCubes, calculateBearing } from "../hooks/useNearbyCubes";
+import { usePaymentStore } from "../stores/paymentStore";
+import { gpsTo3DPosition } from "@cubepay/payment-cube";
+import * as THREE from "three";
+import { Text } from "@react-three/drei";
 import {
   createCubeGeometry,
   createMultiFaceMaterial,
   animateCubeRotation,
   checkCubeIntersection,
-} from '@cubepay/payment-cube';
-import { useFrame, useThree } from '@react-three/fiber';
+} from "@cubepay/payment-cube";
+import { useFrame, useThree } from "@react-three/fiber";
 
 interface GPSCubeRendererProps {
   userLatitude: number;
@@ -26,7 +26,12 @@ interface CubeMarkerProps {
   onSelect: (cube: any) => void;
 }
 
-const CubeMarker: React.FC<CubeMarkerProps> = ({ cube, userLat, userLon, onSelect }) => {
+const CubeMarker: React.FC<CubeMarkerProps> = ({
+  cube,
+  userLat,
+  userLon,
+  onSelect,
+}) => {
   const meshRef = React.useRef<THREE.Mesh>(null);
   const { camera, gl } = useThree();
 
@@ -36,13 +41,18 @@ const CubeMarker: React.FC<CubeMarkerProps> = ({ cube, userLat, userLon, onSelec
     userLon,
     cube.latitude,
     cube.longitude,
-    10 // scale factor: 1 unit = 10 meters
+    10, // scale factor: 1 unit = 10 meters
   );
 
   // Create cube with multi-face colors
   const geometry = createCubeGeometry();
   const faceColors = [
-    '#00D4FF', '#7C3AED', '#3B82F6', '#F59E0B', '#64748B', '#64748B'
+    "#00D4FF",
+    "#7C3AED",
+    "#3B82F6",
+    "#F59E0B",
+    "#64748B",
+    "#64748B",
   ];
   const material = createMultiFaceMaterial(faceColors);
 
@@ -55,7 +65,7 @@ const CubeMarker: React.FC<CubeMarkerProps> = ({ cube, userLat, userLon, onSelec
         event,
         camera,
         meshRef.current,
-        gl.domElement
+        gl.domElement,
       );
 
       if (intersection) {
@@ -63,8 +73,8 @@ const CubeMarker: React.FC<CubeMarkerProps> = ({ cube, userLat, userLon, onSelec
       }
     };
 
-    gl.domElement.addEventListener('click', handleClick);
-    return () => gl.domElement.removeEventListener('click', handleClick);
+    gl.domElement.addEventListener("click", handleClick);
+    return () => gl.domElement.removeEventListener("click", handleClick);
   }, [camera, gl, cube, onSelect]);
 
   // Animate rotation
@@ -101,7 +111,7 @@ const CubeMarker: React.FC<CubeMarkerProps> = ({ cube, userLat, userLon, onSelec
         outlineWidth={0.02}
         outlineColor="#000000"
       >
-        {cube.distance ? `${cube.distance.toFixed(0)}m` : ''}
+        {cube.distance ? `${cube.distance.toFixed(0)}m` : ""}
       </Text>
     </group>
   );
@@ -147,8 +157,12 @@ export const GPSCubeRenderer: React.FC<GPSCubeRendererProps> = ({
     return (
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
         <div className="bg-black bg-opacity-75 px-6 py-4 rounded-lg">
-          <p className="text-white text-lg">📍 No agents found within {radius}m</p>
-          <p className="text-gray-400 text-sm mt-2">Try increasing the search radius</p>
+          <p className="text-white text-lg">
+            📍 No agents found within {radius}m
+          </p>
+          <p className="text-gray-400 text-sm mt-2">
+            Try increasing the search radius
+          </p>
         </div>
       </div>
     );
@@ -159,7 +173,7 @@ export const GPSCubeRenderer: React.FC<GPSCubeRendererProps> = ({
       <Canvas
         camera={{ position: [0, 1.6, 0], fov: 75 }}
         gl={{ alpha: true }}
-        style={{ pointerEvents: 'auto' }}
+        style={{ pointerEvents: "auto" }}
       >
         {/* Lighting */}
         <ambientLight intensity={0.6} />
@@ -181,7 +195,7 @@ export const GPSCubeRenderer: React.FC<GPSCubeRendererProps> = ({
       {/* Cube count overlay */}
       <div className="absolute bottom-4 left-4 bg-black bg-opacity-75 px-4 py-2 rounded-lg pointer-events-none">
         <p className="text-white text-sm">
-          🎲 {cubes.length} agent{cubes.length !== 1 ? 's' : ''} nearby
+          🎲 {cubes.length} agent{cubes.length !== 1 ? "s" : ""} nearby
         </p>
       </div>
 
@@ -190,7 +204,9 @@ export const GPSCubeRenderer: React.FC<GPSCubeRendererProps> = ({
         <div className="absolute bottom-4 right-4 bg-blue-900 bg-opacity-75 px-4 py-2 rounded-lg border border-blue-500 pointer-events-none">
           <p className="text-blue-300 text-xs font-semibold">NEAREST</p>
           <p className="text-white text-sm font-bold">{cubes[0].agent_name}</p>
-          <p className="text-blue-400 text-xs">{cubes[0].distance?.toFixed(0)}m away</p>
+          <p className="text-blue-400 text-xs">
+            {cubes[0].distance?.toFixed(0)}m away
+          </p>
         </div>
       )}
     </div>

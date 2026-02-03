@@ -20,6 +20,7 @@ export const PaymentModal: React.FC = () => {
   const [walletConnector] = useState(() => new WalletConnector());
   const [isWalletConnected, setIsWalletConnected] = useState(false);
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
+  const [ensName, setEnsName] = useState<string | null>(null);
   const [paymentAmount, setPaymentAmount] = useState("10");
   const [selectedChain, setSelectedChain] = useState<number>(11155111); // Ethereum Sepolia
   const [paymentStatus, setPaymentStatus] = useState<
@@ -27,6 +28,8 @@ export const PaymentModal: React.FC = () => {
   >("idle");
   const [transactionHash, setTransactionHash] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [recipientInput, setRecipientInput] = useState<string>("");
+  const [isResolvingENS, setIsResolvingENS] = useState(false);
 
   useEffect(() => {
     if (selectedPaymentFace === "crypto_qr" && selectedAgent) {
@@ -53,6 +56,7 @@ export const PaymentModal: React.FC = () => {
       const state = await walletConnector.connect(walletType);
       setIsWalletConnected(true);
       setWalletAddress(state.address);
+      setEnsName(state.ensName || null);
       setPaymentStatus("idle");
     } catch (error) {
       setPaymentStatus("error");
@@ -232,6 +236,11 @@ export const PaymentModal: React.FC = () => {
             <CheckCircle size={20} />
             <span className="font-semibold">Wallet Connected</span>
           </div>
+          {ensName && (
+            <p className="text-green-400 text-sm mb-1 font-semibold">
+              {ensName}
+            </p>
+          )}
           <p className="text-cubepay-text-secondary text-sm font-mono">
             {walletAddress?.slice(0, 6)}...{walletAddress?.slice(-4)}
           </p>
@@ -243,6 +252,25 @@ export const PaymentModal: React.FC = () => {
   // Render payment form
   const renderPaymentForm = () => (
     <div className="space-y-4">
+      {/* Recipient Address/ENS Input */}
+      <div>
+        <label className="block text-sm text-cubepay-text-secondary mb-2">
+          Recipient Address or ENS
+        </label>
+        <input
+          type="text"
+          value={recipientInput || selectedAgent?.agent_wallet || ""}
+          onChange={(e) => setRecipientInput(e.target.value)}
+          placeholder="0x... or name.eth"
+          className="w-full bg-cubepay-card text-cubepay-text px-4 py-3 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+        />
+        {recipientInput.endsWith(".eth") && (
+          <p className="text-blue-400 text-xs mt-1">
+            🏷️ ENS domain will be resolved automatically
+          </p>
+        )}
+      </div>
+
       {/* Chain Selector */}
       <div>
         <label className="block text-sm text-cubepay-text-secondary mb-2">

@@ -2,6 +2,7 @@ import EventEmitter from "eventemitter3";
 import { createThirdwebClient, defineChain } from "thirdweb";
 import { inAppWallet, createWallet } from "thirdweb/wallets";
 import { ConnectButton, useActiveAccount, useConnect } from "thirdweb/react";
+import { ethers } from "ethers";
 import type {
   WalletType,
   WalletState,
@@ -198,7 +199,7 @@ export class WalletConnector extends EventEmitter<WalletEvents> {
         address,
         chainId,
         balance: await this.getBalance(address, "evm"),
-        ensName: await this.resolveENS(address),
+        ensName: await this.resolveAddressToENS(address),
       };
 
       this.providers.set("metamask", wallet);
@@ -363,6 +364,8 @@ export class WalletConnector extends EventEmitter<WalletEvents> {
 
   /**
    * Execute payment to ENS name
+   * @param payment - Payment with ENS destination
+   * @returns Transaction status
    */
   private async executeENSPayment(
     payment: ChainAbstractedPayment,
@@ -377,6 +380,17 @@ export class WalletConnector extends EventEmitter<WalletEvents> {
     );
 
     if (!resolvedAddress) {
+      throw new Error(`Could not resolve ENS name: ${payment.destinationENS}`);
+    }
+
+    console.log(`Executing payment to ${payment.destinationENS} (${resolvedAddress})`);
+
+    // Execute payment to resolved address
+    return await this.executeDirectPayment({
+      ...payment,
+      destinationAddress: resolvedAddress,
+    });
+  }
       throw new Error(`Could not resolve ENS name: ${payment.destinationENS}`);
     }
 
@@ -424,27 +438,38 @@ export class WalletConnector extends EventEmitter<WalletEvents> {
 
   /**
    * Resolve ENS name to address
+   * @param ensName - ENS domain (e.g., "vitalik.eth")
+   * @returns Ethereum address or null if not found
    */
   private async resolveENSToAddress(ensName: string): Promise<string | null> {
     if (!this.chainAbstraction.ens.enabled) return null;
 
     try {
-      // TODO: Use ENS SDK or ethers.js provider
-      // const provider = new ethers.providers.JsonRpcProvider(ETHEREUM_RPC);
-      // const address = await provider.resolveName(ensName);
-      // return address;
+      // Use Ethereum mainnet for ENS resolution
+      const provider = new ethers.JsonRpcProvider(
+        "https://ethereum.publicnode.com"
+      );
 
-      return null; // Placeholder
+      // Resolve ENS name to address
+      const address = await provider.resolveName(ensName);
+      
+      if (address) {
+        console.log(`ENS resolved: ${ensName} → ${address}`);
+      }
+
+      return address;
     } catch (error) {
-      console.error("ENS resolution failed:", error);
+      console.error(`ENS resolution failed for ${ensName}:`, error);
       return null;
     }
   }
 
   /**
    * Resolve address to ENS name (reverse lookup)
+   * @param address - Ethereum address (e.g., "0x123...")
+   * @returns ENS name or null if not found
    */
-  private async resolveENS(address: string): Promise<string | null> {
+  private async resolveAddressToENS(address: string): Promise<string | null> {
     if (
       !this.chainAbstraction.ens.enabled ||
       !this.chainAbstraction.ens.reverseResolve
@@ -453,13 +478,21 @@ export class WalletConnector extends EventEmitter<WalletEvents> {
     }
 
     try {
-      // TODO: ENS reverse lookup
-      // const provider = new ethers.providers.JsonRpcProvider(ETHEREUM_RPC);
-      // const ensName = await provider.lookupAddress(address);
-      // return ensName;
+      // Use Ethereum mainnet for ENS reverse resolution
+      const provider = new ethers.JsonRpcProvider(
+        "https://ethereum.publicnode.com"
+      );
 
-      return null; // Placeholder
+      // Resolve address to ENS name
+      const ensName = await provider.lookupAddress(address);
+      
+      if (ensName) {
+        console.log(`ENS reverse resolved: ${address} → ${ensName}`);
+      }
+
+      return ensName;
     } catch (error) {
+      console.error(`ENS reverse resolution failed for ${address}:`, error);
       return null;
     }
   }
