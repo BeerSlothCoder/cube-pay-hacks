@@ -1,13 +1,26 @@
 import React, { useState, useEffect } from "react";
 import { usePaymentStore } from "../stores/paymentStore";
-import { X, Wallet, CheckCircle, AlertCircle, Loader2, Zap } from "lucide-react";
+import {
+  X,
+  Wallet,
+  CheckCircle,
+  AlertCircle,
+  Loader2,
+  Zap,
+} from "lucide-react";
 import QRCode from "qrcode";
-import { WalletConnector, createGatewayClient } from "@cubepay/wallet-connector";
+import {
+  WalletConnector,
+  createGatewayClient,
+} from "@cubepay/wallet-connector";
 import {
   executeEVMUSDCPayment,
   executeSolanaUSDCPayment,
 } from "@cubepay/wallet-connector";
-import type { PaymentExecutionResult, UnifiedBalance } from "@cubepay/wallet-connector";
+import type {
+  PaymentExecutionResult,
+  UnifiedBalance,
+} from "@cubepay/wallet-connector";
 import {
   createPaymentSession,
   updatePaymentSession,
@@ -26,7 +39,9 @@ export const PaymentModal: React.FC = () => {
   const [selectedChain, setSelectedChain] = useState<number>(11155111); // Ethereum Sepolia
   const [destinationChain, setDestinationChain] = useState<number>(84532); // Base Sepolia
   const [useCrossChain, setUseCrossChain] = useState(false);
-  const [unifiedBalance, setUnifiedBalance] = useState<UnifiedBalance | null>(null);
+  const [unifiedBalance, setUnifiedBalance] = useState<UnifiedBalance | null>(
+    null,
+  );
   const [isLoadingBalance, setIsLoadingBalance] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState<
     "idle" | "connecting" | "processing" | "success" | "error"
@@ -63,7 +78,7 @@ export const PaymentModal: React.FC = () => {
       setWalletAddress(state.address);
       setEnsName(state.ensName || null);
       setPaymentStatus("idle");
-      
+
       // Load unified balance
       loadUnifiedBalance(state.address!);
     } catch (error) {
@@ -265,13 +280,17 @@ export const PaymentModal: React.FC = () => {
           <p className="text-cubepay-text-secondary text-sm font-mono">
             {walletAddress?.slice(0, 6)}...{walletAddress?.slice(-4)}
           </p>
-          
+
           {/* Unified Balance Display */}
           {unifiedBalance && (
             <div className="mt-3 pt-3 border-t border-green-600/30">
               <div className="flex items-center justify-between mb-1">
-                <span className="text-xs text-cubepay-text-secondary">Total USDC</span>
-                {isLoadingBalance && <Loader2 className="animate-spin" size={12} />}
+                <span className="text-xs text-cubepay-text-secondary">
+                  Total USDC
+                </span>
+                {isLoadingBalance && (
+                  <Loader2 className="animate-spin" size={12} />
+                )}
               </div>
               <p className="text-lg font-bold text-green-400">
                 ${unifiedBalance.totalUSDC}

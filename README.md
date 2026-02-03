@@ -1,8 +1,30 @@
-# CubePay 💳
+# CubePay - AR-Native Payment System with Circle Gateway 💳
 
-> **Revolutionary AR Agent Platform with Multi-Chain Payment Infrastructure**
+> **🏆 Circle Hackathon 2026 Submission**  
+> **Bounty:** Best Chain Abstracted USDC Apps Using Arc as a Liquidity Hub ($5,000)
 
-A modern monorepo combining agent deployment and AR viewing capabilities with seamless multi-blockchain payment integration featuring the innovative 3D Cube Payment Engine.
+## 🎯 What is CubePay?
+
+CubePay is the world's first **AR-native, chain-abstracted payment system** that combines:
+- 🥽 **Augmented Reality** - Discover payment agents in 3D space (screen-based or GPS-based AR)
+- 🌉 **Circle Gateway** - Pay from ANY chain to ANY chain using Arc as liquidity hub
+- 💳 **USDC Focus** - Unified balance across 12 blockchain networks
+- ⚡ **Instant Settlements** - Cross-chain transfers in <30 seconds via Arc
+
+**Core Innovation:** Users see their total USDC across all chains and pay seamlessly regardless of source/destination chain. Circle Gateway routes everything through Arc automatically - no manual bridging required.
+
+---
+
+## ✅ Circle Tools Integrated
+
+- ✅ **Arc** - L1 blockchain as liquidity hub for cross-chain routing
+- ✅ **Circle Gateway** - Cross-chain transfer protocol implementation  
+- ✅ **USDC** - Primary payment token across all chains
+- ✅ **Circle Wallets** - Framework integration (ThirdWeb SDK)
+
+[**📄 Full Circle Integration Documentation →**](./CIRCLE_INTEGRATION.md)
+
+---
 
 ## 🌟 Features
 
