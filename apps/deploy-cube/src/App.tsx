@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import { createCubePayDatabase } from '@cubepay/database-client';
+import { CubePreview } from './components/CubePreview';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
@@ -178,13 +179,13 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-white p-8">
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-7xl mx-auto">
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-2">🎲 CubePay Deployment Hub</h1>
           <p className="text-gray-400">Deploy payment agents to real-world locations</p>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-8">
+        <div className="grid lg:grid-cols-3 gap-8">
           {/* Left Column - Agent Info */}
           <div className="space-y-6">
             <div className="bg-gray-800 rounded-lg p-6 space-y-4">
@@ -233,6 +234,17 @@ function App() {
                 {message}
               </div>
             )}
+          </div>
+
+          {/* Middle Column - Cube Preview */}
+          <div className="space-y-6">
+            <div className="bg-gray-800 rounded-lg p-6">
+              <h2 className="text-xl font-semibold mb-4">Payment Cube Preview</h2>
+              <p className="text-sm text-gray-400 mb-4">This is how your payment cube will appear in AR</p>
+              <div className="relative w-full h-96 rounded-lg overflow-hidden bg-gray-900">
+                <CubePreview autoRotate={true} showLabels={true} />
+              </div>
+            </div>
           </div>
 
           {/* Right Column - Location */}

@@ -9,6 +9,12 @@
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
   },
   "dependencies": {
+    "@cubepay/payment-cube": "file:../../packages/payment-cube",
+    "@cubepay/ui": "file:../../packages/ui",
+    "@cubepay/wallet-connector": "file:../../packages/wallet-connector",
+    "@cubepay/database-client": "file:../../packages/database-client",
+    "@cubepay/network-config": "file:../../packages/network-config",
+    "@cubepay/types": "file:../../packages/types",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "@supabase/supabase-js": "^2.39.0",
