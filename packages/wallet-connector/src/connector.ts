@@ -1,4 +1,7 @@
 import EventEmitter from "eventemitter3";
+import { createThirdwebClient, defineChain } from "thirdweb";
+import { inAppWallet, createWallet } from "thirdweb/wallets";
+import { ConnectButton, useActiveAccount, useConnect } from "thirdweb/react";
 import type {
   WalletType,
   WalletState,
@@ -30,9 +33,15 @@ export class WalletConnector extends EventEmitter<WalletEvents> {
 
   private chainAbstraction: ChainAbstractionConfig;
   private providers: Map<WalletType, any> = new Map();
+  private thirdwebClient: any;
 
   constructor(chainAbstractionConfig?: Partial<ChainAbstractionConfig>) {
     super();
+
+    // Initialize ThirdWeb client
+    this.thirdwebClient = createThirdwebClient({
+      clientId: process.env.VITE_THIRDWEB_CLIENT_ID || "",
+    });
 
     // Default Arc-focused configuration
     this.chainAbstraction = {
@@ -171,23 +180,17 @@ export class WalletConnector extends EventEmitter<WalletEvents> {
   private async connectMetaMask(
     options?: WalletConnectionOptions,
   ): Promise<WalletState> {
-    if (typeof window === "undefined" || !(window as any).ethereum) {
-      throw new Error("MetaMask not installed");
-    }
-
-    const provider = (window as any).ethereum;
-
     try {
-      // Request account access
-      const accounts = await provider.request({
-        method: "eth_requestAccounts",
+      // Create MetaMask wallet using ThirdWeb SDK
+      const wallet = createWallet("io.metamask");
+      
+      // Connect to the wallet
+      const account = await wallet.connect({
+        client: this.thirdwebClient,
       });
 
-      const chainId = await provider.request({
-        method: "eth_chainId",
-      });
-
-      const address = accounts[0];
+      const address = account.address;
+      const chainId = (await account.getChainId()).toString();
 
       this.state = {
         type: "metamask",
@@ -198,22 +201,7 @@ export class WalletConnector extends EventEmitter<WalletEvents> {
         ensName: await this.resolveENS(address),
       };
 
-      // Setup event listeners
-      provider.on("accountsChanged", (accounts: string[]) => {
-        if (accounts.length === 0) {
-          this.disconnect();
-        } else {
-          this.state.address = accounts[0];
-          this.emit("accountChanged", accounts[0]);
-        }
-      });
-
-      provider.on("chainChanged", (chainId: string) => {
-        this.state.chainId = chainId;
-        this.emit("chainChanged", chainId);
-      });
-
-      this.providers.set("metamask", provider);
+      this.providers.set("metamask", wallet);
       this.emit("connect", this.state);
       return this.state;
     } catch (error) {
@@ -230,15 +218,16 @@ export class WalletConnector extends EventEmitter<WalletEvents> {
   private async connectPhantom(
     options?: WalletConnectionOptions,
   ): Promise<WalletState> {
-    if (typeof window === "undefined" || !(window as any).phantom?.solana) {
-      throw new Error("Phantom wallet not installed");
-    }
-
-    const provider = (window as any).phantom.solana;
-
     try {
-      const response = await provider.connect();
-      const address = response.publicKey.toString();
+      // Create Phantom wallet using ThirdWeb SDK
+      const wallet = createWallet("app.phantom");
+      
+      // Connect to the wallet
+      const account = await wallet.connect({
+        client: this.thirdwebClient,
+      });
+
+      const address = account.address;
 
       this.state = {
         type: "phantom",
@@ -258,12 +247,8 @@ export class WalletConnector extends EventEmitter<WalletEvents> {
         if (publicKey) {
           this.state.address = publicKey.toString();
           this.emit("accountChanged", this.state.address);
-        } else {
-          this.disconnect();
-        }
-      });
 
-      this.providers.set("phantom", provider);
+      this.providers.set("phantom", wallet);
       this.emit("connect", this.state);
       return this.state;
     } catch (error) {
@@ -278,30 +263,32 @@ export class WalletConnector extends EventEmitter<WalletEvents> {
   private async connectHashPack(
     options?: WalletConnectionOptions,
   ): Promise<WalletState> {
-    // TODO: Integrate HashPack wallet
-    throw new Error("HashPack integration pending - requires HashPack SDK");
+    try {
+      // Create HashPack wallet using ThirdWeb SDK
+      const wallet = createWallet("com.hashpack");
+      
+      // Connect to the wallet
+      const account = await wallet.connect({
+        client: this.thirdwebClient,
+      });
 
-    // Example implementation:
-    /*
-    const hashconnect = new HashConnect();
-    await hashconnect.init(appMetadata);
-    
-    const state = await hashconnect.connect();
-    const address = state.pairingData.accountIds[0];
-    
-    this.state = {
-      type: 'hashpack',
-      connected: true,
-      address,
-      chainId: 'hedera-testnet',
-      balance: await this.getBalance(address, 'hedera'),
-      ensName: null
-    };
-    
-    this.providers.set('hashpack', hashconnect);
-    this.emit('connect', this.state);
-    return this.state;
-    */
+      const address = account.address;
+
+      this.state = {
+        type: 'hashpack',
+        connected: true,
+        address,
+        chainId: 'hedera-testnet',
+        balance: await this.getBalance(address, 'hedera'),
+        ensName: null
+      };
+      
+      this.providers.set('hashpack', wallet);
+      this.emit('connect', this.state);
+      return this.state;
+    } catch (error) {
+      throw new Error(`HashPack connection failed: ${(error as Error).message}`);
+    }
   }
 
   // =====================================================
