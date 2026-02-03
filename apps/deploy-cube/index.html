@@ -8,6 +8,27 @@
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      // Inline Buffer polyfill for Solana libraries
+      (function () {
+        function BufferPolyfill() {}
+        BufferPolyfill.isBuffer = function () {
+          return false;
+        };
+        BufferPolyfill.from = function (data) {
+          if (typeof data === "string") {
+            return new Uint8Array(Array.from(data).map((c) => c.charCodeAt(0)));
+          }
+          return new Uint8Array(data);
+        };
+        BufferPolyfill.alloc = function (size) {
+          return new Uint8Array(size);
+        };
+        window.Buffer = window.Buffer || BufferPolyfill;
+        window.global = window.global || window;
+        window.process = window.process || { env: {}, browser: true };
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

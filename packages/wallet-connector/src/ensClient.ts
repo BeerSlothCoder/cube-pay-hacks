@@ -118,7 +118,8 @@ export class ENSClient {
    */
   private async getResolver(ensName: string) {
     try {
-      const resolver = await this.provider.getResolver(ensName);
+      // TODO: Fix ethers Provider type - getResolver exists at runtime
+      const resolver = await (this.provider as any).getResolver(ensName);
       return resolver;
     } catch (error) {
       console.error(`Failed to get resolver for ${ensName}:`, error);

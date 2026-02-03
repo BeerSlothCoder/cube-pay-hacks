@@ -8,6 +8,9 @@ import { EVM_NETWORKS } from "./evm-networks";
 import { SOLANA_NETWORKS } from "./solana-networks";
 import { HEDERA_NETWORKS } from "./hedera-networks";
 
+// Re-export types
+export type { NetworkConfig } from "@cubepay/types";
+
 // Export individual network configs
 export * from "./evm-networks";
 export * from "./solana-networks";

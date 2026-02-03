@@ -61,7 +61,9 @@ function App() {
           <GPSCubeRenderer
             userLatitude={userLocation.lat}
             userLongitude={userLocation.lon}
-            radius={activeFilters?.distanceKm ? activeFilters.distanceKm * 1000 : 1000}
+            radius={
+              activeFilters?.distanceKm ? activeFilters.distanceKm * 1000 : 1000
+            }
           />
         )
       )}
@@ -140,7 +142,9 @@ function App() {
             <button
               onClick={() => setShowFilterPanel(!showFilterPanel)}
               className={`px-4 py-2 rounded-lg font-semibold transition-all flex items-center gap-2 ${
-                showFilterPanel ? "bg-blue-600" : "bg-cubepay-card hover:bg-gray-700"
+                showFilterPanel
+                  ? "bg-blue-600"
+                  : "bg-cubepay-card hover:bg-gray-700"
               }`}
             >
               <Filter size={20} />
@@ -160,13 +164,17 @@ function App() {
           {viewMode === "gps" && !userLocation && (
             <div className="bg-yellow-600 bg-opacity-90 px-4 py-2 rounded-lg flex items-center gap-2">
               <Navigation size={16} className="animate-pulse" />
-              <span className="text-sm font-semibold">Getting your location...</span>
+              <span className="text-sm font-semibold">
+                Getting your location...
+              </span>
             </div>
           )}
           {viewMode === "gps" && userLocation && (
             <div className="bg-green-600 bg-opacity-90 px-4 py-2 rounded-lg flex items-center gap-2">
               <MapPin size={16} />
-              <span className="text-sm font-semibold">GPS Active - {agents.length} agents nearby</span>
+              <span className="text-sm font-semibold">
+                GPS Active - {agents.length} agents nearby
+              </span>
             </div>
           )}
         </div>

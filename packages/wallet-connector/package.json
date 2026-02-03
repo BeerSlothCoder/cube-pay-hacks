@@ -2,8 +2,16 @@
   "name": "@cubepay/wallet-connector",
   "version": "0.1.0",
   "description": "Multi-chain wallet connection layer for CubePay with Arc chain abstraction",
+  "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",

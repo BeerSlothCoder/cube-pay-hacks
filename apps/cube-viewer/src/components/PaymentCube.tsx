@@ -6,16 +6,14 @@ import { usePaymentStore } from "../stores/paymentStore";
 import type { PaymentFace } from "../stores/paymentStore";
 import * as THREE from "three";
 import {
-  createCubeGeometry,
-  createCubeMaterial,
-  createMultiFaceMaterial,
-  animateCubeRotation,
-  animateHoverEffect,
-  animateClickEffect,
+  createPaymentCubeGeometry,
+  createPaymentCubeMaterial,
+  createMultiFaceMaterials,
+  applyRotationAnimation,
+  animateScale,
   createARCamera,
   gpsTo3DPosition,
-  setupRaycaster,
-  checkCubeIntersection,
+  detectCubeClick,
 } from "@cubepay/payment-cube";
 
 interface CubeProps {
@@ -42,16 +40,15 @@ function RotatingCube({ agent }: CubeProps) {
   const [hoveredFace, setHoveredFace] = useState<number | null>(null);
 
   // Initialize cube geometry and multi-face material
-  const geometry = createCubeGeometry();
-  const faceColors = faces.map((f) => f.color);
-  const material = createMultiFaceMaterial(faceColors);
+  const geometry = createPaymentCubeGeometry();
+  const materials = createMultiFaceMaterials();
 
   // Handle click events
   useEffect(() => {
     const handleClick = (event: MouseEvent) => {
       if (!meshRef.current) return;
 
-      const intersection = checkCubeIntersection(
+      const intersection = detectCubeClick(
         event,
         camera,
         meshRef.current,
@@ -62,8 +59,8 @@ function RotatingCube({ agent }: CubeProps) {
         const face = faces[intersection.faceIndex];
         selectPaymentFace(face.face);
 
-        // Animate click effect
-        animateClickEffect(meshRef.current);
+        // Animate click effect with scale
+        animateScale(meshRef.current, { scale: 1.1, duration: 200 });
       }
     };
 
@@ -76,7 +73,7 @@ function RotatingCube({ agent }: CubeProps) {
     const handlePointerMove = (event: PointerEvent) => {
       if (!meshRef.current) return;
 
-      const intersection = checkCubeIntersection(
+      const intersection = detectCubeClick(
         event,
         camera,
         meshRef.current,
@@ -100,11 +97,13 @@ function RotatingCube({ agent }: CubeProps) {
   // Animate rotation
   useFrame((state) => {
     if (meshRef.current) {
-      animateCubeRotation(meshRef.current);
+      applyRotationAnimation(meshRef.current, { speed: 0.01 });
 
       // Apply hover effect if face is hovered
       if (hoveredFace !== null) {
-        animateHoverEffect(meshRef.current);
+        meshRef.current.scale.setScalar(1.05);
+      } else {
+        meshRef.current.scale.setScalar(1.0);
       }
     }
   });
@@ -112,7 +111,7 @@ function RotatingCube({ agent }: CubeProps) {
   return (
     <group>
       {/* Main Cube with multi-face colors */}
-      <mesh ref={meshRef} geometry={geometry} material={material} />
+      <mesh ref={meshRef} geometry={geometry} material={materials} />
 
       {/* Face Labels */}
       {faces.map((face, index) => {

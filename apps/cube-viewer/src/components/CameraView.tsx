@@ -1,6 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { useGeolocation } from '../hooks/useGeolocation';
-import { MapPin, Navigation } from 'lucide-react';
+import React, { useEffect, useRef, useState } from "react";
+import { useGeolocation } from "../hooks/useGeolocation";
+import { MapPin, Navigation } from "lucide-react";
 
 interface CameraViewProps {
   onLocationUpdate?: (lat: number, lon: number) => void;
@@ -9,7 +9,7 @@ interface CameraViewProps {
 export const CameraView: React.FC<CameraViewProps> = ({ onLocationUpdate }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [error, setError] = useState<string>('');
+  const [error, setError] = useState<string>("");
   const [cameraActive, setCameraActive] = useState(false);
   const [useFallback, setUseFallback] = useState(false);
   const { position, error: gpsError, loading: gpsLoading } = useGeolocation();
@@ -18,25 +18,31 @@ export const CameraView: React.FC<CameraViewProps> = ({ onLocationUpdate }) => {
     const startCamera = async () => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'environment' }
+          video: { facingMode: "environment" },
         });
 
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
           videoRef.current.onloadedmetadata = () => {
-            videoRef.current?.play().then(() => {
-              setCameraActive(true);
-              setError('');
-            }).catch(err => {
-              console.error('❌ Camera error:', err.message);
-              setError('Could not start video source');
-              setUseFallback(true);
-            });
+            videoRef.current
+              ?.play()
+              .then(() => {
+                setCameraActive(true);
+                setError("");
+              })
+              .catch((err) => {
+                console.error("❌ Camera error:", err.message);
+                setError("Could not start video source");
+                setUseFallback(true);
+              });
           };
         }
       } catch (err) {
-        console.error('❌ Camera error:', err instanceof Error ? err.message : 'Unknown error');
-        setError('Could not start video source');
+        console.error(
+          "❌ Camera error:",
+          err instanceof Error ? err.message : "Unknown error",
+        );
+        setError("Could not start video source");
         setUseFallback(true);
       }
     };
@@ -46,7 +52,7 @@ export const CameraView: React.FC<CameraViewProps> = ({ onLocationUpdate }) => {
     return () => {
       if (videoRef.current?.srcObject) {
         const stream = videoRef.current.srcObject as MediaStream;
-        stream.getTracks().forEach(track => track.stop());
+        stream.getTracks().forEach((track) => track.stop());
       }
     };
   }, []);
@@ -62,25 +68,25 @@ export const CameraView: React.FC<CameraViewProps> = ({ onLocationUpdate }) => {
     if (!useFallback || !canvasRef.current) return;
 
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
     // Draw AR grid fallback
-    ctx.fillStyle = '#0A0E1A';
+    ctx.fillStyle = "#0A0E1A";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     // Add gradient
     const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-    gradient.addColorStop(0, '#0A0E1A');
-    gradient.addColorStop(1, '#1E293B');
+    gradient.addColorStop(0, "#0A0E1A");
+    gradient.addColorStop(1, "#1E293B");
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     // Draw grid lines
-    ctx.strokeStyle = '#1E40AF';
+    ctx.strokeStyle = "#1E40AF";
     ctx.lineWidth = 1;
     const gridSize = 50;
 
@@ -102,7 +108,7 @@ export const CameraView: React.FC<CameraViewProps> = ({ onLocationUpdate }) => {
     const centerX = canvas.width / 2;
     const centerY = canvas.height / 2;
 
-    ctx.strokeStyle = '#00D4FF';
+    ctx.strokeStyle = "#00D4FF";
     ctx.lineWidth = 2;
 
     // Horizontal line
@@ -118,10 +124,10 @@ export const CameraView: React.FC<CameraViewProps> = ({ onLocationUpdate }) => {
     ctx.stroke();
 
     // Center text
-    ctx.fillStyle = '#00D4FF';
-    ctx.font = 'bold 16px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('AR VIEW - DEMO MODE', centerX, centerY + 60);
+    ctx.fillStyle = "#00D4FF";
+    ctx.font = "bold 16px sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("AR VIEW - DEMO MODE", centerX, centerY + 60);
   }, [useFallback]);
 
   return (
@@ -142,15 +148,25 @@ export const CameraView: React.FC<CameraViewProps> = ({ onLocationUpdate }) => {
       <div className="absolute top-4 left-4 space-y-2">
         {/* Camera status */}
         <div className="flex items-center gap-2 bg-black bg-opacity-50 px-3 py-2 rounded-lg">
-          <div className={`w-3 h-3 rounded-full ${
-            cameraActive ? 'bg-green-500' : 
-            useFallback ? 'bg-yellow-500' : 
-            error ? 'bg-red-500' : 'bg-blue-500'
-          }`} />
+          <div
+            className={`w-3 h-3 rounded-full ${
+              cameraActive
+                ? "bg-green-500"
+                : useFallback
+                  ? "bg-yellow-500"
+                  : error
+                    ? "bg-red-500"
+                    : "bg-blue-500"
+            }`}
+          />
           <span className="text-white text-sm font-medium">
-            {cameraActive ? 'Camera Active' : 
-             useFallback ? 'AR Demo Mode' : 
-             error ? 'Camera Error' : 'Initializing...'}
+            {cameraActive
+              ? "Camera Active"
+              : useFallback
+                ? "AR Demo Mode"
+                : error
+                  ? "Camera Error"
+                  : "Initializing..."}
           </span>
         </div>
 
@@ -183,9 +199,6 @@ export const CameraView: React.FC<CameraViewProps> = ({ onLocationUpdate }) => {
             </span>
           </div>
         )}
-      </div> 
-           error ? 'Camera Error' : 'Requesting Camera...'}
-        </span>
       </div>
     </div>
   );

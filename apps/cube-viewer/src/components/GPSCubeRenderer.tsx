@@ -6,10 +6,10 @@ import { gpsTo3DPosition } from "@cubepay/payment-cube";
 import * as THREE from "three";
 import { Text } from "@react-three/drei";
 import {
-  createCubeGeometry,
-  createMultiFaceMaterial,
-  animateCubeRotation,
-  checkCubeIntersection,
+  createPaymentCubeGeometry,
+  createMultiFaceMaterials,
+  applyRotationAnimation,
+  detectCubeClick,
 } from "@cubepay/payment-cube";
 import { useFrame, useThree } from "@react-three/fiber";
 
@@ -45,23 +45,15 @@ const CubeMarker: React.FC<CubeMarkerProps> = ({
   );
 
   // Create cube with multi-face colors
-  const geometry = createCubeGeometry();
-  const faceColors = [
-    "#00D4FF",
-    "#7C3AED",
-    "#3B82F6",
-    "#F59E0B",
-    "#64748B",
-    "#64748B",
-  ];
-  const material = createMultiFaceMaterial(faceColors);
+  const geometry = createPaymentCubeGeometry();
+  const materials = createMultiFaceMaterials();
 
   // Handle click
   useEffect(() => {
     const handleClick = (event: MouseEvent) => {
       if (!meshRef.current) return;
 
-      const intersection = checkCubeIntersection(
+      const intersection = detectCubeClick(
         event,
         camera,
         meshRef.current,
@@ -80,14 +72,19 @@ const CubeMarker: React.FC<CubeMarkerProps> = ({
   // Animate rotation
   useFrame(() => {
     if (meshRef.current) {
-      animateCubeRotation(meshRef.current);
+      applyRotationAnimation(meshRef.current, { speed: 0.01 });
     }
   });
 
   return (
     <group position={[position.x, position.y, position.z]}>
       {/* Payment Cube */}
-      <mesh ref={meshRef} geometry={geometry} material={material} scale={0.5} />
+      <mesh
+        ref={meshRef}
+        geometry={geometry}
+        material={materials}
+        scale={0.5}
+      />
 
       {/* Distance label */}
       <Text

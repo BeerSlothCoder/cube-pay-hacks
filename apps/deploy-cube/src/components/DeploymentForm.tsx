@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   MapPin,
   Network,
@@ -6,7 +6,6 @@ import {
   Hash,
   DollarSign,
   Upload,
-  Globe,
   Loader2,
   CheckCircle,
   AlertCircle,
@@ -18,58 +17,24 @@ import { BlockchainSelector } from "./BlockchainSelector";
 import { PositionSelector } from "./PositionSelector";
 import { ARCGatewayConfig } from "./ARCGatewayConfig";
 import { ENSIntegration } from "./ENSIntegration";
+import { WalletConnector } from "./WalletConnector";
 
 const AGENT_TYPES: { value: AgentType; label: string; description: string }[] =
   [
     {
-      value: "ai_avatar",
-      label: "AI Avatar",
-      description: "Conversational AI assistant with 3D avatar",
+      value: "home_security",
+      label: "Virtual ATM",
+      description: "Cryptocurrency ATM service for crypto-to-fiat conversion",
     },
     {
-      value: "ar_portal",
-      label: "AR Portal",
-      description: "Gateway to virtual experiences",
+      value: "payment_terminal",
+      label: "Payment Terminal - POS",
+      description: "Point-of-sale payment processing terminal",
     },
     {
-      value: "nft_display",
-      label: "NFT Display",
-      description: "Showcase NFT collections in AR",
-    },
-    {
-      value: "interactive_billboard",
-      label: "Interactive Billboard",
-      description: "Dynamic advertising display",
-    },
-    {
-      value: "virtual_assistant",
-      label: "Virtual Assistant",
-      description: "Task-oriented AI helper",
-    },
-    {
-      value: "game_character",
-      label: "Game Character",
-      description: "Interactive gaming agent",
-    },
-    {
-      value: "tour_guide",
-      label: "Tour Guide",
-      description: "Location-based guide",
-    },
-    {
-      value: "product_showcase",
-      label: "Product Showcase",
-      description: "3D product demonstration",
-    },
-    {
-      value: "event_host",
-      label: "Event Host",
-      description: "Virtual event coordinator",
-    },
-    {
-      value: "custom",
-      label: "Custom Agent",
-      description: "Your unique agent type",
+      value: "content_creator",
+      label: "My Payment Terminal",
+      description: "Personal payment terminal for creators and merchants",
     },
   ];
 
@@ -111,6 +76,23 @@ interface DeploymentFormData {
   // ENS
   ens_domain: string;
   ens_enabled: boolean;
+
+  // Interaction Methods
+  interaction_methods: string[];
+
+  // MCP Integrations
+  mcp_integrations: string[];
+
+  // Payment Methods (6-faced cube)
+  payment_methods: string[];
+
+  // AR Configuration
+  visibility_range: number;
+  interaction_range: number;
+  ar_notifications: boolean;
+
+  // Trailing Agent
+  trailing_agent: boolean;
 }
 
 interface DeploymentFormProps {
@@ -124,7 +106,7 @@ export const DeploymentForm: React.FC<DeploymentFormProps> = ({
 }) => {
   const [formData, setFormData] = useState<DeploymentFormData>({
     agent_name: "",
-    agent_type: "ai_avatar",
+    agent_type: "home_security",
     agent_description: "",
     avatar_url: "",
     latitude: 40.7128,
@@ -145,6 +127,13 @@ export const DeploymentForm: React.FC<DeploymentFormProps> = ({
     arc_supported_chains: [11155111, 84532, 421614],
     ens_domain: "",
     ens_enabled: false,
+    interaction_methods: ["chat"],
+    mcp_integrations: [],
+    payment_methods: ["crypto_qr"],
+    visibility_range: 25,
+    interaction_range: 15,
+    ar_notifications: true,
+    trailing_agent: false,
   });
 
   const [deploymentStatus, setDeploymentStatus] = useState<
@@ -225,6 +214,18 @@ export const DeploymentForm: React.FC<DeploymentFormProps> = ({
     }
     if (formData.fee_type === "percentage" && formData.fee_amount > 100) {
       setErrorMessage("Fee percentage cannot exceed 100%");
+      return false;
+    }
+
+    // Payment Methods Validation
+    if (formData.payment_methods.length === 0) {
+      setErrorMessage("At least one payment method must be selected");
+      return false;
+    }
+
+    // Interaction Methods Validation
+    if (formData.interaction_methods.length === 0) {
+      setErrorMessage("At least one interaction method must be selected");
       return false;
     }
 
@@ -456,6 +457,88 @@ export const DeploymentForm: React.FC<DeploymentFormProps> = ({
           Upload your GLB file to a CDN or IPFS and paste the URL here
         </p>
       </div>
+
+      {/* Interaction Methods */}
+      <div className="bg-gray-800/50 rounded-lg p-6 border border-gray-700">
+        <h3 className="text-lg font-semibold text-cream mb-4">
+          Agent Interaction Methods
+        </h3>
+        <div className="grid grid-cols-2 gap-4">
+          {[
+            { value: "chat", label: "Chat" },
+            { value: "voice", label: "Voice" },
+            { value: "video", label: "Video" },
+            { value: "ar", label: "AR" },
+          ].map((method) => (
+            <label
+              key={method.value}
+              className="flex items-center gap-3 p-3 bg-gray-900 rounded-lg cursor-pointer hover:bg-gray-800 transition-colors"
+            >
+              <input
+                type="checkbox"
+                checked={formData.interaction_methods.includes(method.value)}
+                onChange={(e) => {
+                  const methods = e.target.checked
+                    ? [...formData.interaction_methods, method.value]
+                    : formData.interaction_methods.filter(
+                        (m) => m !== method.value,
+                      );
+                  updateField("interaction_methods", methods);
+                }}
+                className="w-5 h-5 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500"
+              />
+              <span className="text-cream">{method.label}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      {/* MCP Server Interactions */}
+      <div className="bg-gray-800/50 rounded-lg p-6 border border-gray-700">
+        <h3 className="text-lg font-semibold text-cream mb-4">
+          MCP Server Interactions
+        </h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {[
+            "Chat",
+            "Voice",
+            "Analysis",
+            "Information Lookup",
+            "Educational Content",
+            "Study Planning",
+            "Q&A",
+            "Location Services",
+            "Directory",
+            "Navigation",
+            "Content Generation",
+            "Brainstorming",
+            "Writing",
+            "Game Creation",
+            "Puzzles",
+            "Entertainment",
+          ].map((integration) => (
+            <label
+              key={integration}
+              className="flex items-center gap-2 p-2 bg-gray-900 rounded cursor-pointer hover:bg-gray-800 transition-colors text-sm"
+            >
+              <input
+                type="checkbox"
+                checked={formData.mcp_integrations.includes(integration)}
+                onChange={(e) => {
+                  const integrations = e.target.checked
+                    ? [...formData.mcp_integrations, integration]
+                    : formData.mcp_integrations.filter(
+                        (i) => i !== integration,
+                      );
+                  updateField("mcp_integrations", integrations);
+                }}
+                className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500"
+              />
+              <span className="text-cream text-xs">{integration}</span>
+            </label>
+          ))}
+        </div>
+      </div>
     </div>
   );
 
@@ -488,6 +571,84 @@ export const DeploymentForm: React.FC<DeploymentFormProps> = ({
           updateField("screen_z", screen.z_index);
         }}
       />
+
+      {/* Trailing Agent */}
+      <div className="bg-gray-800/50 rounded-lg p-6 border border-gray-700">
+        <label className="flex items-center gap-3 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={formData.trailing_agent}
+            onChange={(e) => updateField("trailing_agent", e.target.checked)}
+            className="w-5 h-5 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500"
+          />
+          <div>
+            <span className="text-cream font-medium">Trailing Agent</span>
+            <p className="text-sm text-gray-400">
+              Agent follows your GPS location in real-time
+            </p>
+          </div>
+        </label>
+      </div>
+
+      {/* AR Configuration */}
+      <div className="bg-gray-800/50 rounded-lg p-6 border border-gray-700">
+        <h3 className="text-lg font-semibold text-cream mb-4">
+          AR Configuration
+        </h3>
+
+        {/* Visibility Range */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-cream mb-2">
+            Visibility Range: {formData.visibility_range}m
+          </label>
+          <input
+            type="range"
+            min="0"
+            max="100"
+            value={formData.visibility_range}
+            onChange={(e) =>
+              updateField("visibility_range", parseInt(e.target.value))
+            }
+            className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+          />
+          <div className="flex justify-between text-xs text-gray-500 mt-1">
+            <span>0m</span>
+            <span>100m</span>
+          </div>
+        </div>
+
+        {/* Interaction Range */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-cream mb-2">
+            Interaction Range: {formData.interaction_range}m
+          </label>
+          <input
+            type="range"
+            min="0"
+            max="100"
+            value={formData.interaction_range}
+            onChange={(e) =>
+              updateField("interaction_range", parseInt(e.target.value))
+            }
+            className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+          />
+          <div className="flex justify-between text-xs text-gray-500 mt-1">
+            <span>0m</span>
+            <span>100m</span>
+          </div>
+        </div>
+
+        {/* AR Notifications */}
+        <label className="flex items-center gap-3 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={formData.ar_notifications}
+            onChange={(e) => updateField("ar_notifications", e.target.checked)}
+            className="w-5 h-5 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500"
+          />
+          <span className="text-cream">Enable AR Notifications</span>
+        </label>
+      </div>
     </div>
   );
 
@@ -601,6 +762,127 @@ export const DeploymentForm: React.FC<DeploymentFormProps> = ({
           </p>
         )}
       </div>
+
+      {/* Revenue Calculator */}
+      <div className="bg-gradient-to-br from-emerald-500/20 via-green-500/10 to-blue-500/10 backdrop-blur-sm rounded-2xl p-8 border-2 border-emerald-500/40 shadow-2xl shadow-emerald-500/20">
+        <h3 className="text-2xl font-bold bg-gradient-to-r from-emerald-400 to-green-400 bg-clip-text text-transparent mb-6">
+          💰 Revenue Projection
+        </h3>
+        <div className="space-y-5">
+          <div className="flex items-center justify-between p-4 bg-gray-900/50 rounded-xl">
+            <span className="text-gray-300 font-medium text-lg">
+              Per Interaction:
+            </span>
+            <span className="text-2xl font-bold text-emerald-400">
+              {formData.fee_type === "fixed"
+                ? `$${formData.fee_amount.toFixed(2)}`
+                : `${formData.fee_amount}%`}{" "}
+              USDC
+            </span>
+          </div>
+          <div className="flex items-center justify-between p-4 bg-gray-900/50 rounded-xl">
+            <span className="text-gray-300 font-medium text-lg">
+              Estimated Daily (10 interactions):
+            </span>
+            <span className="text-2xl font-bold text-green-400">
+              {formData.fee_type === "fixed"
+                ? `$${(formData.fee_amount * 10).toFixed(2)}`
+                : `~$${(formData.fee_amount * 10).toFixed(2)}`}{" "}
+              USDC
+            </span>
+          </div>
+          <div className="flex items-center justify-between pt-5 border-t-2 border-emerald-500/30 p-4 bg-gradient-to-r from-emerald-900/30 to-green-900/30 rounded-xl">
+            <span className="text-white font-bold text-xl">
+              🚀 Monthly Potential:
+            </span>
+            <span className="text-3xl font-black bg-gradient-to-r from-emerald-300 to-green-300 bg-clip-text text-transparent">
+              {formData.fee_type === "fixed"
+                ? `$${(formData.fee_amount * 300).toFixed(2)}`
+                : `~$${(formData.fee_amount * 300).toFixed(2)}`}{" "}
+              USDC
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* 6-Faced Payment Methods */}
+      <div className="bg-gray-800/50 rounded-lg p-6 border border-gray-700">
+        <h3 className="text-lg font-semibold text-cream mb-4">
+          Payment Methods (6-Faced Cube)
+        </h3>
+        {formData.agent_wallet && (
+          <div className="mb-4 p-3 bg-green-900/20 border border-green-500/30 rounded-lg flex items-center gap-2">
+            <CheckCircle className="w-5 h-5 text-green-400" />
+            <span className="text-green-400 text-sm">
+              Wallet Connected: {formData.agent_wallet.slice(0, 10)}...
+            </span>
+          </div>
+        )}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {[
+            {
+              value: "crypto_qr",
+              label: "Crypto Payments",
+              description: "QR code-based crypto payments",
+            },
+            {
+              value: "bank_card",
+              label: "Bank Virtual Card",
+              description: "Apple Pay / Google Pay integration",
+            },
+            {
+              value: "bank_qr",
+              label: "Bank QR Payments",
+              description: "Traditional bank QR codes",
+            },
+            {
+              value: "voice",
+              label: "Voice Commands",
+              description: "Voice-activated payments",
+            },
+            {
+              value: "sound",
+              label: "Sound Payments",
+              description: "Ultrasonic payment transfer",
+            },
+            {
+              value: "onboard",
+              label: "Onboard Crypto Education",
+              description: "Help users start with crypto",
+            },
+          ].map((method) => (
+            <label
+              key={method.value}
+              className="flex items-start gap-3 p-4 bg-gray-900 rounded-lg cursor-pointer hover:bg-gray-800 transition-colors border border-gray-700 hover:border-blue-500"
+            >
+              <input
+                type="checkbox"
+                checked={formData.payment_methods.includes(method.value)}
+                onChange={(e) => {
+                  const methods = e.target.checked
+                    ? [...formData.payment_methods, method.value]
+                    : formData.payment_methods.filter(
+                        (m) => m !== method.value,
+                      );
+                  updateField("payment_methods", methods);
+                }}
+                className="w-5 h-5 mt-0.5 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500"
+              />
+              <div>
+                <div className="text-cream font-medium">{method.label}</div>
+                <div className="text-xs text-gray-400">
+                  {method.description}
+                </div>
+              </div>
+            </label>
+          ))}
+        </div>
+        {formData.payment_methods.length === 0 && (
+          <p className="mt-3 text-sm text-red-400">
+            * At least one payment method must be selected
+          </p>
+        )}
+      </div>
     </div>
   );
 
@@ -687,9 +969,21 @@ export const DeploymentForm: React.FC<DeploymentFormProps> = ({
 
   return (
     <div className="max-w-4xl mx-auto p-6">
+      {/* Wallet Connector */}
+      <WalletConnector
+        onWalletConnect={(address, chainId) => {
+          updateField("agent_wallet", address);
+          console.log("Wallet connected:", address, "Chain ID:", chainId);
+        }}
+        onWalletDisconnect={() => {
+          updateField("agent_wallet", "");
+          console.log("Wallet disconnected");
+        }}
+      />
+
       {renderStepIndicator()}
 
-      <div className="bg-gray-900 rounded-xl p-8 shadow-2xl border border-gray-800">
+      <div className="bg-gradient-to-br from-gray-900/95 to-gray-800/95 backdrop-blur-xl rounded-3xl p-10 shadow-2xl border-2 border-gray-700/50">
         {currentStep === 1 && renderStep1()}
         {currentStep === 2 && renderStep2()}
         {currentStep === 3 && renderStep3()}
@@ -698,14 +992,14 @@ export const DeploymentForm: React.FC<DeploymentFormProps> = ({
 
         {/* Error Message */}
         {errorMessage && (
-          <div className="mt-6 p-4 bg-red-900/20 border border-red-500 rounded-lg flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-            <p className="text-red-400 text-sm">{errorMessage}</p>
+          <div className="mt-8 p-5 bg-gradient-to-r from-red-900/30 to-red-800/30 backdrop-blur-sm border-2 border-red-500/50 rounded-xl flex items-start gap-3 shadow-lg shadow-red-500/20">
+            <AlertCircle className="w-6 h-6 text-red-400 flex-shrink-0 mt-0.5" />
+            <p className="text-red-300 font-medium text-lg">{errorMessage}</p>
           </div>
         )}
 
         {/* Navigation Buttons */}
-        <div className="mt-8 flex justify-between gap-4">
+        <div className="mt-10 flex justify-between gap-6">
           <button
             onClick={() => {
               if (currentStep === 1 && onCancel) {
@@ -714,10 +1008,10 @@ export const DeploymentForm: React.FC<DeploymentFormProps> = ({
                 setCurrentStep((prev) => (prev - 1) as typeof currentStep);
               }
             }}
-            className="px-6 py-3 bg-gray-800 text-cream rounded-lg hover:bg-gray-700 transition-colors border border-gray-700"
+            className="group px-8 py-4 bg-gray-800/80 backdrop-blur-sm text-cream rounded-xl hover:bg-gray-700 hover:shadow-xl transition-all duration-300 hover:scale-105 border-2 border-gray-700/50 font-semibold text-lg"
             disabled={deploymentStatus === "deploying"}
           >
-            {currentStep === 1 ? "Cancel" : "Back"}
+            {currentStep === 1 ? "← Cancel" : "← Back"}
           </button>
 
           {currentStep < 5 ? (
@@ -725,26 +1019,23 @@ export const DeploymentForm: React.FC<DeploymentFormProps> = ({
               onClick={() =>
                 setCurrentStep((prev) => (prev + 1) as typeof currentStep)
               }
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="group px-8 py-4 bg-gradient-to-r from-blue-600 via-blue-700 to-purple-700 text-white rounded-xl hover:shadow-2xl hover:shadow-blue-500/50 transition-all duration-300 hover:scale-105 font-semibold text-lg flex items-center gap-2"
             >
-              Continue
+              Continue →
             </button>
           ) : (
             <button
               onClick={handleDeploy}
               disabled={deploymentStatus === "deploying"}
-              className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              className="group px-10 py-5 bg-gradient-to-r from-emerald-600 via-green-600 to-teal-600 text-white rounded-xl hover:shadow-2xl hover:shadow-emerald-500/50 transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 font-bold text-xl flex items-center gap-3"
             >
               {deploymentStatus === "deploying" ? (
                 <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <Loader2 className="w-7 h-7 animate-spin" />
                   Deploying...
                 </>
               ) : (
-                <>
-                  <Upload className="w-5 h-5" />
-                  Deploy Agent
-                </>
+                <>🚀 Deploy Agent Now</>
               )}
             </button>
           )}

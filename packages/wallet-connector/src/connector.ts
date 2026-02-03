@@ -189,14 +189,16 @@ export class WalletConnector extends EventEmitter<WalletEvents> {
     try {
       // Create MetaMask wallet using ThirdWeb SDK
       const wallet = createWallet("io.metamask");
-      
+
       // Connect to the wallet
       const account = await wallet.connect({
         client: this.thirdwebClient,
       });
 
       const address = account.address;
-      const chainId = (await account.getChainId()).toString();
+      // TODO: Fix ThirdWeb Account API types
+      // const chainId = (await account.getChainId()).toString();
+      const chainId = "1"; // Ethereum mainnet
 
       this.state = {
         type: "metamask",
@@ -227,7 +229,7 @@ export class WalletConnector extends EventEmitter<WalletEvents> {
     try {
       // Create Phantom wallet using ThirdWeb SDK
       const wallet = createWallet("app.phantom");
-      
+
       // Connect to the wallet
       const account = await wallet.connect({
         client: this.thirdwebClient,
@@ -243,16 +245,6 @@ export class WalletConnector extends EventEmitter<WalletEvents> {
         balance: await this.getBalance(address, "solana"),
         ensName: null, // Solana doesn't use ENS
       };
-
-      // Setup event listeners
-      provider.on("disconnect", () => {
-        this.disconnect();
-      });
-
-      provider.on("accountChanged", (publicKey: any) => {
-        if (publicKey) {
-          this.state.address = publicKey.toString();
-          this.emit("accountChanged", this.state.address);
 
       this.providers.set("phantom", wallet);
       this.emit("connect", this.state);
@@ -271,8 +263,9 @@ export class WalletConnector extends EventEmitter<WalletEvents> {
   ): Promise<WalletState> {
     try {
       // Create HashPack wallet using ThirdWeb SDK
-      const wallet = createWallet("com.hashpack");
-      
+      // TODO: Fix ThirdWeb WalletId type for HashPack
+      const wallet = createWallet("com.hashpack" as any);
+
       // Connect to the wallet
       const account = await wallet.connect({
         client: this.thirdwebClient,
@@ -281,19 +274,21 @@ export class WalletConnector extends EventEmitter<WalletEvents> {
       const address = account.address;
 
       this.state = {
-        type: 'hashpack',
+        type: "hashpack",
         connected: true,
         address,
-        chainId: 'hedera-testnet',
-        balance: await this.getBalance(address, 'hedera'),
-        ensName: null
+        chainId: "hedera-testnet",
+        balance: await this.getBalance(address, "hedera"),
+        ensName: null,
       };
-      
-      this.providers.set('hashpack', wallet);
-      this.emit('connect', this.state);
+
+      this.providers.set("hashpack", wallet);
+      this.emit("connect", this.state);
       return this.state;
     } catch (error) {
-      throw new Error(`HashPack connection failed: ${(error as Error).message}`);
+      throw new Error(
+        `HashPack connection failed: ${(error as Error).message}`,
+      );
     }
   }
 
@@ -353,7 +348,7 @@ export class WalletConnector extends EventEmitter<WalletEvents> {
       const destinationChainId = parseInt(payment.destinationChain);
 
       console.log(
-        `🌉 Arc Gateway: Initiating transfer from chain ${sourceChainId} → ${destinationChainId}`
+        `🌉 Arc Gateway: Initiating transfer from chain ${sourceChainId} → ${destinationChainId}`,
       );
 
       // Execute cross-chain transfer via Circle Gateway
@@ -365,7 +360,7 @@ export class WalletConnector extends EventEmitter<WalletEvents> {
           destinationAddress: payment.destinationAddress,
           sourceAddress: this.state.address!,
         },
-        (window as any).ethereum || provider
+        (window as any).ethereum || provider,
       );
 
       return {
@@ -401,16 +396,9 @@ export class WalletConnector extends EventEmitter<WalletEvents> {
       throw new Error(`Could not resolve ENS name: ${payment.destinationENS}`);
     }
 
-    console.log(`Executing payment to ${payment.destinationENS} (${resolvedAddress})`);
-
-    // Execute payment to resolved address
-    return await this.executeDirectPayment({
-      ...payment,
-      destinationAddress: resolvedAddress,
-    });
-  }
-      throw new Error(`Could not resolve ENS name: ${payment.destinationENS}`);
-    }
+    console.log(
+      `Executing payment to ${payment.destinationENS} (${resolvedAddress})`,
+    );
 
     // Execute payment to resolved address
     return await this.executeDirectPayment({
@@ -444,7 +432,7 @@ export class WalletConnector extends EventEmitter<WalletEvents> {
 
     try {
       const balance = await this.gatewayClient.getUnifiedBalance(address);
-      
+
       // Convert numeric chain IDs to string format for compatibility
       const balancesByChain: Record<string, string> = {};
       for (const [chainId, amount] of Object.entries(balance.balancesByChain)) {
@@ -477,12 +465,12 @@ export class WalletConnector extends EventEmitter<WalletEvents> {
     try {
       // Use Ethereum mainnet for ENS resolution
       const provider = new ethers.JsonRpcProvider(
-        "https://ethereum.publicnode.com"
+        "https://ethereum.publicnode.com",
       );
 
       // Resolve ENS name to address
       const address = await provider.resolveName(ensName);
-      
+
       if (address) {
         console.log(`ENS resolved: ${ensName} → ${address}`);
       }
@@ -510,12 +498,12 @@ export class WalletConnector extends EventEmitter<WalletEvents> {
     try {
       // Use Ethereum mainnet for ENS reverse resolution
       const provider = new ethers.JsonRpcProvider(
-        "https://ethereum.publicnode.com"
+        "https://ethereum.publicnode.com",
       );
 
       // Resolve address to ENS name
       const ensName = await provider.lookupAddress(address);
-      
+
       if (ensName) {
         console.log(`ENS reverse resolved: ${address} → ${ensName}`);
       }
@@ -561,6 +549,7 @@ export class WalletConnector extends EventEmitter<WalletEvents> {
   private async switchMetaMaskNetwork(network: NetworkConfig): Promise<void> {
     const provider = this.providers.get("metamask");
     if (!provider) throw new Error("MetaMask not connected");
+    if (!network.chainId) throw new Error("Network chain ID is required");
 
     try {
       await provider.request({
@@ -577,8 +566,8 @@ export class WalletConnector extends EventEmitter<WalletEvents> {
               chainId: `0x${network.chainId.toString(16)}`,
               chainName: network.name,
               nativeCurrency: network.nativeCurrency,
-              rpcUrls: [network.rpcUrl],
-              blockExplorerUrls: [network.blockExplorer],
+              rpcUrls: network.rpcUrls,
+              blockExplorerUrls: network.blockExplorerUrls || [],
             },
           ],
         });

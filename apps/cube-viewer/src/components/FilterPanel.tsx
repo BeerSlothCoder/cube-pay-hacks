@@ -4,20 +4,9 @@ import { EVM_NETWORKS } from "@cubepay/network-config";
 import type { AgentType } from "@cubepay/types";
 
 const AGENT_TYPES: { value: AgentType; label: string; emoji: string }[] = [
-  { value: "ai_avatar", label: "AI Avatar", emoji: "🤖" },
-  { value: "ar_portal", label: "AR Portal", emoji: "🌀" },
-  { value: "nft_display", label: "NFT Display", emoji: "🖼️" },
-  {
-    value: "interactive_billboard",
-    label: "Interactive Billboard",
-    emoji: "📺",
-  },
-  { value: "virtual_assistant", label: "Virtual Assistant", emoji: "💁" },
-  { value: "game_character", label: "Game Character", emoji: "🎮" },
-  { value: "tour_guide", label: "Tour Guide", emoji: "🗺️" },
-  { value: "product_showcase", label: "Product Showcase", emoji: "🛍️" },
-  { value: "event_host", label: "Event Host", emoji: "🎉" },
-  { value: "custom", label: "Custom Agent", emoji: "⚙️" },
+  { value: "home_security", label: "Virtual ATM", emoji: "🏧" },
+  { value: "payment_terminal", label: "Payment Terminal - POS", emoji: "💳" },
+  { value: "content_creator", label: "My Payment Terminal", emoji: "💰" },
 ];
 
 const PAYMENT_METHODS = [
