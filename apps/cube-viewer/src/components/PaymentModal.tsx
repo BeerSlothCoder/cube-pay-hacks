@@ -12,6 +12,7 @@ import QRCode from "qrcode";
 import {
   WalletConnector,
   createGatewayClient,
+  createENSClient,
 } from "@cubepay/wallet-connector";
 import {
   executeEVMUSDCPayment,
@@ -20,6 +21,7 @@ import {
 import type {
   PaymentExecutionResult,
   UnifiedBalance,
+  ENSAgentProfile,
 } from "@cubepay/wallet-connector";
 import {
   createPaymentSession,
@@ -32,9 +34,12 @@ export const PaymentModal: React.FC = () => {
   const [qrCodeUrl, setQrCodeUrl] = useState("");
   const [walletConnector] = useState(() => new WalletConnector());
   const [gatewayClient] = useState(() => createGatewayClient());
+  const [ensClient] = useState(() => createENSClient());
   const [isWalletConnected, setIsWalletConnected] = useState(false);
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [ensName, setEnsName] = useState<string | null>(null);
+  const [recipientENSProfile, setRecipientENSProfile] =
+    useState<ENSAgentProfile | null>(null);
   const [paymentAmount, setPaymentAmount] = useState("10");
   const [selectedChain, setSelectedChain] = useState<number>(11155111); // Ethereum Sepolia
   const [destinationChain, setDestinationChain] = useState<number>(84532); // Base Sepolia
@@ -64,6 +69,59 @@ export const PaymentModal: React.FC = () => {
         .catch((err) => console.error("QR Code generation error:", err));
     }
   }, [selectedPaymentFace, selectedAgent, selectedChain, paymentAmount]);
+
+  // Fetch ENS profile when recipient input changes to .eth
+  useEffect(() => {
+    const fetchENSProfile = async () => {
+      if (recipientInput.endsWith(".eth")) {
+        setIsResolvingENS(true);
+        try {
+          const profile = await ensClient.getAgentProfile(recipientInput);
+          setRecipientENSProfile(profile);
+
+          // Auto-fill payment preferences if available
+          if (profile?.paymentPreferences) {
+            const { preferredChain, minPayment, maxPayment } =
+              profile.paymentPreferences;
+
+            // Set preferred chain if available
+            if (preferredChain) {
+              const chainId = chains.find(
+                (c) => c.symbol.toLowerCase() === preferredChain.toLowerCase(),
+              )?.id;
+              if (chainId) {
+                setDestinationChain(chainId);
+              }
+            }
+
+            // Warn if payment amount is outside agent's range
+            const amount = parseFloat(paymentAmount);
+            if (minPayment && amount < parseFloat(minPayment)) {
+              setErrorMessage(
+                `Agent ${recipientInput} requires minimum $${minPayment} USDC`,
+              );
+            } else if (maxPayment && amount > parseFloat(maxPayment)) {
+              setErrorMessage(
+                `Agent ${recipientInput} accepts maximum $${maxPayment} USDC`,
+              );
+            } else {
+              setErrorMessage(null);
+            }
+          }
+        } catch (error) {
+          console.error("Failed to fetch ENS profile:", error);
+          setRecipientENSProfile(null);
+        } finally {
+          setIsResolvingENS(false);
+        }
+      } else {
+        setRecipientENSProfile(null);
+      }
+    };
+
+    const debounce = setTimeout(fetchENSProfile, 500);
+    return () => clearTimeout(debounce);
+  }, [recipientInput, paymentAmount]);
 
   // Connect wallet
   const handleConnectWallet = async (
@@ -345,9 +403,73 @@ export const PaymentModal: React.FC = () => {
           className="w-full bg-cubepay-card text-cubepay-text px-4 py-3 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
         />
         {recipientInput.endsWith(".eth") && (
-          <p className="text-blue-400 text-xs mt-1">
-            🏷️ ENS domain will be resolved automatically
+          <p className="text-blue-400 text-xs mt-1 flex items-center gap-1">
+            {isResolvingENS ? (
+              <>
+                <Loader2 size={12} className="animate-spin" />
+                Resolving ENS profile...
+              </>
+            ) : recipientENSProfile ? (
+              <>
+                <CheckCircle size={12} />
+                ENS profile loaded ✓
+              </>
+            ) : (
+              "🏷️ ENS domain will be resolved automatically"
+            )}
           </p>
+        )}
+
+        {/* ENS Profile Card */}
+        {recipientENSProfile && (
+          <div className="mt-3 bg-blue-900/20 border border-blue-600/30 rounded-lg p-3">
+            <div className="flex items-start gap-3">
+              {recipientENSProfile.avatar && (
+                <img
+                  src={recipientENSProfile.avatar}
+                  alt={recipientENSProfile.name}
+                  className="w-12 h-12 rounded-full"
+                />
+              )}
+              <div className="flex-1 min-w-0">
+                <h4 className="text-sm font-semibold text-blue-400">
+                  {recipientENSProfile.name}
+                </h4>
+                {recipientENSProfile.description && (
+                  <p className="text-xs text-cubepay-text-secondary mt-1">
+                    {recipientENSProfile.description}
+                  </p>
+                )}
+                {recipientENSProfile.paymentPreferences && (
+                  <div className="mt-2 space-y-1">
+                    {recipientENSProfile.paymentPreferences.preferredChain && (
+                      <p className="text-xs text-green-400">
+                        ⛓️ Prefers:{" "}
+                        {recipientENSProfile.paymentPreferences.preferredChain}
+                      </p>
+                    )}
+                    {(recipientENSProfile.paymentPreferences.minPayment ||
+                      recipientENSProfile.paymentPreferences.maxPayment) && (
+                      <p className="text-xs text-cubepay-text-secondary">
+                        💰 Range: $
+                        {recipientENSProfile.paymentPreferences.minPayment ||
+                          "0"}{" "}
+                        - $
+                        {recipientENSProfile.paymentPreferences.maxPayment ||
+                          "∞"}{" "}
+                        USDC
+                      </p>
+                    )}
+                  </div>
+                )}
+                {recipientENSProfile.rating && (
+                  <p className="text-xs text-yellow-400 mt-1">
+                    ⭐ {recipientENSProfile.rating}/5
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
         )}
       </div>
 

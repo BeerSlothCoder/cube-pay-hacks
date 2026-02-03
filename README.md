@@ -1,28 +1,43 @@
-# CubePay - AR-Native Payment System with Circle Gateway 💳
+# CubePay - AR-Native Payment System with Circle & ENS 💳
 
-> **🏆 Circle Hackathon 2026 Submission**  
-> **Bounty:** Best Chain Abstracted USDC Apps Using Arc as a Liquidity Hub ($5,000)
+> **🏆 ETHGlobal Bangkok 2024 Hackathon**  
+> **Bounties:**
+> - **Circle:** Best Chain Abstracted USDC Apps Using Arc ($5,000)
+> - **ENS:** Integrate ENS ($3,500 pool split)
+> - **ENS:** Most Creative Use for DeFi ($1,500)
 
 ## 🎯 What is CubePay?
 
 CubePay is the world's first **AR-native, chain-abstracted payment system** that combines:
+
 - 🥽 **Augmented Reality** - Discover payment agents in 3D space (screen-based or GPS-based AR)
 - 🌉 **Circle Gateway** - Pay from ANY chain to ANY chain using Arc as liquidity hub
+- 🏷️ **ENS Integration** - Advanced payment preferences and multi-chain routing via ENS
 - 💳 **USDC Focus** - Unified balance across 12 blockchain networks
 - ⚡ **Instant Settlements** - Cross-chain transfers in <30 seconds via Arc
 
-**Core Innovation:** Users see their total USDC across all chains and pay seamlessly regardless of source/destination chain. Circle Gateway routes everything through Arc automatically - no manual bridging required.
+**Core Innovation:** Users see their total USDC across all chains and pay seamlessly regardless of source/destination chain. Circle Gateway routes everything through Arc automatically. Agent payment preferences are stored in ENS text records for decentralized configuration.
 
 ---
 
-## ✅ Circle Tools Integrated
+## ✅ Hackathon Features
 
+### Circle Integration ✅
 - ✅ **Arc** - L1 blockchain as liquidity hub for cross-chain routing
-- ✅ **Circle Gateway** - Cross-chain transfer protocol implementation  
-- ✅ **USDC** - Primary payment token across all chains
+- ✅ **Circle Gateway** - Cross-chain transfer protocol implementation
+- ✅ **USDC** - Primary payment token across 12 chains
 - ✅ **Circle Wallets** - Framework integration (ThirdWeb SDK)
 
-[**📄 Full Circle Integration Documentation →**](./CIRCLE_INTEGRATION.md)
+[**📄 Full Circle Documentation →**](./CIRCLE_INTEGRATION.md)
+
+### ENS Integration ✅
+- ✅ **Text Records** - Payment preferences stored in ENS (`com.cubepay.*` schema)
+- ✅ **Multi-Chain Addresses** - Different USDC addresses per chain in ENS
+- ✅ **Agent Profiles** - Decentralized profiles via IPFS content hash
+- ✅ **Smart Routing** - Auto-select preferred chain from ENS records
+- ✅ **Payment Validation** - Min/max limits from ENS text records
+
+[**📄 Full ENS Documentation →**](./ENS_INTEGRATION.md)
 
 ---
 

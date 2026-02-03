@@ -42,3 +42,8 @@ export type {
   TransferStatus,
   UnifiedBalance,
 } from "./circleGateway";
+
+// ENS Client
+export { ENSClient, createENSClient, ENS_TEXT_RECORDS } from "./ensClient";
+
+export type { ENSPaymentPreferences, ENSAgentProfile } from "./ensClient";
