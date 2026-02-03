@@ -1,10 +1,22 @@
-import React, { useRef } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
+import React, { useRef, useEffect, useState } from 'react';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Text } from '@react-three/drei';
 import type { DeployedObject } from '@cubepay/types';
 import { usePaymentStore } from '../stores/paymentStore';
 import type { PaymentFace } from '../stores/paymentStore';
 import * as THREE from 'three';
+import {
+  createCubeGeometry,
+  createCubeMaterial,
+  createMultiFaceMaterial,
+  animateCubeRotation,
+  animateHoverEffect,
+  animateClickEffect,
+  createARCamera,
+  gpsTo3DPosition,
+  setupRaycaster,
+  checkCubeIntersection,
+} from '@cubepay/payment-cube';
 
 interface CubeProps {
   agent: DeployedObject;
@@ -14,68 +26,128 @@ const faces: Array<{
   face: PaymentFace; 
   label: string; 
   color: string; 
-  position: [number, number, number]; 
-  rotation: [number, number, number] 
 }> = [
-  { face: 'crypto_qr', label: 'Crypto QR', color: '#00D4FF', position: [0, 0, 0.51], rotation: [0, 0, 0] },
-  { face: 'virtual_card', label: 'Virtual Card', color: '#7C3AED', position: [0, 0, -0.51], rotation: [0, Math.PI, 0] },
-  { face: 'on_off_ramp', label: 'On/Off Ramp', color: '#3B82F6', position: [0.51, 0, 0], rotation: [0, Math.PI / 2, 0] },
-  { face: 'ens_payment', label: 'ENS Pay', color: '#F59E0B', position: [-0.51, 0, 0], rotation: [0, -Math.PI / 2, 0] },
-  { face: 'sound_pay', label: 'Sound Pay', color: '#64748B', position: [0, 0.51, 0], rotation: [-Math.PI / 2, 0, 0] },
-  { face: 'voice_pay', label: 'Voice Pay', color: '#64748B', position: [0, -0.51, 0], rotation: [Math.PI / 2, 0, 0] },
+  { face: 'crypto_qr', label: 'Crypto QR', color: '#00D4FF' },
+  { face: 'virtual_card', label: 'Virtual Card', color: '#7C3AED' },
+  { face: 'on_off_ramp', label: 'On/Off Ramp', color: '#3B82F6' },
+  { face: 'ens_payment', label: 'ENS Pay', color: '#F59E0B' },
+  { face: 'sound_pay', label: 'Sound Pay', color: '#64748B' },
+  { face: 'voice_pay', label: 'Voice Pay', color: '#64748B' },
 ];
 
 function RotatingCube({ agent }: CubeProps) {
-  const groupRef = useRef<THREE.Group>(null);
+  const meshRef = useRef<THREE.Mesh>(null);
+  const { camera, gl, raycaster, pointer } = useThree();
   const { selectPaymentFace } = usePaymentStore();
+  const [hoveredFace, setHoveredFace] = useState<number | null>(null);
 
+  // Initialize cube geometry and multi-face material
+  const geometry = createCubeGeometry();
+  const faceColors = faces.map(f => f.color);
+  const material = createMultiFaceMaterial(faceColors);
+
+  // Handle click events
+  useEffect(() => {
+    const handleClick = (event: MouseEvent) => {
+      if (!meshRef.current) return;
+
+      const intersection = checkCubeIntersection(
+        event,
+        camera,
+        meshRef.current,
+        gl.domElement
+      );
+
+      if (intersection && intersection.faceIndex !== undefined) {
+        const face = faces[intersection.faceIndex];
+        selectPaymentFace(face.face);
+        
+        // Animate click effect
+        animateClickEffect(meshRef.current);
+      }
+    };
+
+    gl.domElement.addEventListener('click', handleClick);
+    return () => gl.domElement.removeEventListener('click', handleClick);
+  }, [camera, gl, selectPaymentFace]);
+
+  // Handle hover effects
+  useEffect(() => {
+    const handlePointerMove = (event: PointerEvent) => {
+      if (!meshRef.current) return;
+
+      const intersection = checkCubeIntersection(
+        event,
+        camera,
+        meshRef.current,
+        gl.domElement
+      );
+
+      if (intersection && intersection.faceIndex !== undefined) {
+        setHoveredFace(intersection.faceIndex);
+        document.body.style.cursor = 'pointer';
+      } else {
+        setHoveredFace(null);
+        document.body.style.cursor = 'default';
+      }
+    };
+
+    gl.domElement.addEventListener('pointermove', handlePointerMove);
+    return () => gl.domElement.removeEventListener('pointermove', handlePointerMove);
+  }, [camera, gl]);
+
+  // Animate rotation
   useFrame((state) => {
-    if (groupRef.current) {
-      groupRef.current.rotation.y = state.clock.getElapsedTime() * 0.3;
+    if (meshRef.current) {
+      animateCubeRotation(meshRef.current);
+      
+      // Apply hover effect if face is hovered
+      if (hoveredFace !== null) {
+        animateHoverEffect(meshRef.current);
+      }
     }
   });
 
   return (
-    <group ref={groupRef}>
-      {/* Main Cube Body - Metallic Blue */}
-      <mesh>
-        <boxGeometry args={[1, 1, 1]} />
-        <meshStandardMaterial 
-          color="#1E40AF" 
-          metalness={0.8} 
-          roughness={0.2}
-          envMapIntensity={1.5}
-        />
-      </mesh>
+    <group>
+      {/* Main Cube with multi-face colors */}
+      <mesh ref={meshRef} geometry={geometry} material={material} />
 
-      {/* Face Panels */}
-      {faces.map(({ face, label, color, position, rotation }) => (
-        <group key={face} position={position} rotation={rotation}>
-          <mesh
-            onClick={() => selectPaymentFace(face)}
-            onPointerOver={(e) => {
-              e.stopPropagation();
-              document.body.style.cursor = 'pointer';
-            }}
-            onPointerOut={() => {
-              document.body.style.cursor = 'default';
-            }}
-          >
-            <planeGeometry args={[0.9, 0.9]} />
-            <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.3} />
-          </mesh>
-          <Text
-            position={[0, 0, 0.01]}
-            fontSize={0.08}
-            color="#FFFFFF"
-            anchorX="center"
-            anchorY="middle"
-            maxWidth={0.8}
-          >
-            {label}
-          </Text>
-        </group>
-      ))}
+      {/* Face Labels */}
+      {faces.map((face, index) => {
+        const facePositions: [number, number, number][] = [
+          [0, 0, 0.51],   // Front
+          [0, 0, -0.51],  // Back
+          [0.51, 0, 0],   // Right
+          [-0.51, 0, 0],  // Left
+          [0, 0.51, 0],   // Top
+          [0, -0.51, 0],  // Bottom
+        ];
+        
+        const faceRotations: [number, number, number][] = [
+          [0, 0, 0],                    // Front
+          [0, Math.PI, 0],              // Back
+          [0, Math.PI / 2, 0],          // Right
+          [0, -Math.PI / 2, 0],         // Left
+          [-Math.PI / 2, 0, 0],         // Top
+          [Math.PI / 2, 0, 0],          // Bottom
+        ];
+
+        return (
+          <group key={face.face} position={facePositions[index]} rotation={faceRotations[index]}>
+            <Text
+              position={[0, 0, 0.01]}
+              fontSize={0.08}
+              color="#FFFFFF"
+              anchorX="center"
+              anchorY="middle"
+              maxWidth={0.8}
+            >
+              {face.label}
+            </Text>
+          </group>
+        );
+      })}
     </group>
   );
 }
