@@ -1,12 +1,12 @@
-import React, { useRef } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Environment } from '@react-three/drei';
-import * as THREE from 'three';
+import React, { useRef } from "react";
+import { Canvas, useFrame } from "@react-three/fiber";
+import { OrbitControls, Environment } from "@react-three/drei";
+import * as THREE from "three";
 import {
   createCubeGeometry,
   createMultiFaceMaterial,
   animateCubeRotation,
-} from '@cubepay/payment-cube';
+} from "@cubepay/payment-cube";
 
 interface CubePreviewProps {
   className?: string;
@@ -20,12 +20,12 @@ const PaymentCubeMesh: React.FC<{ autoRotate: boolean }> = ({ autoRotate }) => {
   // Create cube with multi-face colors
   const geometry = createCubeGeometry();
   const faceColors = [
-    '#00D4FF', // Front: Crypto QR (Cyan)
-    '#7C3AED', // Back: Virtual Card (Purple)
-    '#3B82F6', // Right: On/Off Ramp (Blue)
-    '#F59E0B', // Left: ENS Payment (Orange)
-    '#64748B', // Top: Sound Pay (Gray)
-    '#64748B', // Bottom: Voice Pay (Gray)
+    "#00D4FF", // Front: Crypto QR (Cyan)
+    "#7C3AED", // Back: Virtual Card (Purple)
+    "#3B82F6", // Right: On/Off Ramp (Blue)
+    "#F59E0B", // Left: ENS Payment (Orange)
+    "#64748B", // Top: Sound Pay (Gray)
+    "#64748B", // Bottom: Voice Pay (Gray)
   ];
   const material = createMultiFaceMaterial(faceColors);
 
@@ -40,13 +40,13 @@ const PaymentCubeMesh: React.FC<{ autoRotate: boolean }> = ({ autoRotate }) => {
 
 /**
  * CubePreview - 3D preview of payment cube for deployment
- * 
+ *
  * Shows the metallic blue payment cube with 6 colored faces
  * Supports auto-rotation and orbit controls for inspection
  * Used in Deployment Hub to preview cube before deployment
  */
 export const CubePreview: React.FC<CubePreviewProps> = ({
-  className = '',
+  className = "",
   autoRotate = true,
   showLabels = false,
 }) => {
@@ -80,23 +80,38 @@ export const CubePreview: React.FC<CubePreviewProps> = ({
           <div className="font-semibold mb-2">Payment Faces:</div>
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded" style={{ backgroundColor: '#00D4FF' }}></div>
+              <div
+                className="w-3 h-3 rounded"
+                style={{ backgroundColor: "#00D4FF" }}
+              ></div>
               <span>Crypto QR</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded" style={{ backgroundColor: '#7C3AED' }}></div>
+              <div
+                className="w-3 h-3 rounded"
+                style={{ backgroundColor: "#7C3AED" }}
+              ></div>
               <span>Virtual Card</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded" style={{ backgroundColor: '#3B82F6' }}></div>
+              <div
+                className="w-3 h-3 rounded"
+                style={{ backgroundColor: "#3B82F6" }}
+              ></div>
               <span>On/Off Ramp</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded" style={{ backgroundColor: '#F59E0B' }}></div>
+              <div
+                className="w-3 h-3 rounded"
+                style={{ backgroundColor: "#F59E0B" }}
+              ></div>
               <span>ENS Payment</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded" style={{ backgroundColor: '#64748B' }}></div>
+              <div
+                className="w-3 h-3 rounded"
+                style={{ backgroundColor: "#64748B" }}
+              ></div>
               <span>Sound/Voice Pay</span>
             </div>
           </div>

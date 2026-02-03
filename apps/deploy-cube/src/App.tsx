@@ -1,16 +1,19 @@
-import React, { useState } from 'react';
-import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
-import { createCubePayDatabase } from '@cubepay/database-client';
-import { CubePreview } from './components/CubePreview';
-import 'leaflet/dist/leaflet.css';
-import L from 'leaflet';
+import React, { useState } from "react";
+import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
+import { createCubePayDatabase } from "@cubepay/database-client";
+import { CubePreview } from "./components/CubePreview";
+import "leaflet/dist/leaflet.css";
+import L from "leaflet";
 
 // Fix Leaflet default marker icon
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+  iconRetinaUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png",
+  iconUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png",
+  shadowUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
 });
 
 interface ScreenPosition {
@@ -19,8 +22,16 @@ interface ScreenPosition {
   z_index: number;
 }
 
-function ScreenPositionPicker({ onSelect }: { onSelect: (pos: ScreenPosition) => void }) {
-  const [position, setPosition] = useState<ScreenPosition>({ x: 50, y: 50, z_index: 1 });
+function ScreenPositionPicker({
+  onSelect,
+}: {
+  onSelect: (pos: ScreenPosition) => void;
+}) {
+  const [position, setPosition] = useState<ScreenPosition>({
+    x: 50,
+    y: 50,
+    z_index: 1,
+  });
 
   const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -33,7 +44,7 @@ function ScreenPositionPicker({ onSelect }: { onSelect: (pos: ScreenPosition) =>
 
   return (
     <div className="space-y-4">
-      <div 
+      <div
         className="relative w-full h-64 bg-gradient-to-br from-gray-900 to-gray-800 rounded-lg cursor-crosshair overflow-hidden"
         onClick={handleClick}
       >
@@ -41,14 +52,20 @@ function ScreenPositionPicker({ onSelect }: { onSelect: (pos: ScreenPosition) =>
         <div className="absolute inset-0 opacity-20">
           {[...Array(10)].map((_, i) => (
             <React.Fragment key={i}>
-              <div className="absolute w-full border-t border-blue-400" style={{ top: `${i * 10}%` }} />
-              <div className="absolute h-full border-l border-blue-400" style={{ left: `${i * 10}%` }} />
+              <div
+                className="absolute w-full border-t border-blue-400"
+                style={{ top: `${i * 10}%` }}
+              />
+              <div
+                className="absolute h-full border-l border-blue-400"
+                style={{ left: `${i * 10}%` }}
+              />
             </React.Fragment>
           ))}
         </div>
 
         {/* Selected Position */}
-        <div 
+        <div
           className="absolute w-8 h-8 bg-blue-500 rounded-full border-4 border-white shadow-lg transform -translate-x-1/2 -translate-y-1/2"
           style={{ left: `${position.x}%`, top: `${position.y}%` }}
         />
@@ -60,11 +77,13 @@ function ScreenPositionPicker({ onSelect }: { onSelect: (pos: ScreenPosition) =>
 
       <div className="flex gap-4">
         <div className="flex-1">
-          <label className="block text-sm text-gray-300 mb-1">X Position: {position.x.toFixed(1)}%</label>
-          <input 
-            type="range" 
-            min="0" 
-            max="100" 
+          <label className="block text-sm text-gray-300 mb-1">
+            X Position: {position.x.toFixed(1)}%
+          </label>
+          <input
+            type="range"
+            min="0"
+            max="100"
             value={position.x}
             onChange={(e) => {
               const newPos = { ...position, x: parseFloat(e.target.value) };
@@ -75,11 +94,13 @@ function ScreenPositionPicker({ onSelect }: { onSelect: (pos: ScreenPosition) =>
           />
         </div>
         <div className="flex-1">
-          <label className="block text-sm text-gray-300 mb-1">Y Position: {position.y.toFixed(1)}%</label>
-          <input 
-            type="range" 
-            min="0" 
-            max="100" 
+          <label className="block text-sm text-gray-300 mb-1">
+            Y Position: {position.y.toFixed(1)}%
+          </label>
+          <input
+            type="range"
+            min="0"
+            max="100"
             value={position.y}
             onChange={(e) => {
               const newPos = { ...position, y: parseFloat(e.target.value) };
@@ -90,14 +111,19 @@ function ScreenPositionPicker({ onSelect }: { onSelect: (pos: ScreenPosition) =>
           />
         </div>
         <div className="w-32">
-          <label className="block text-sm text-gray-300 mb-1">Z-Index: {position.z_index}</label>
-          <input 
-            type="number" 
-            min="1" 
-            max="100" 
+          <label className="block text-sm text-gray-300 mb-1">
+            Z-Index: {position.z_index}
+          </label>
+          <input
+            type="number"
+            min="1"
+            max="100"
             value={position.z_index}
             onChange={(e) => {
-              const newPos = { ...position, z_index: parseInt(e.target.value) || 1 };
+              const newPos = {
+                ...position,
+                z_index: parseInt(e.target.value) || 1,
+              };
               setPosition(newPos);
               onSelect(newPos);
             }}
@@ -109,7 +135,11 @@ function ScreenPositionPicker({ onSelect }: { onSelect: (pos: ScreenPosition) =>
   );
 }
 
-function LocationPicker({ onSelect }: { onSelect: (lat: number, lng: number) => void }) {
+function LocationPicker({
+  onSelect,
+}: {
+  onSelect: (lat: number, lng: number) => void;
+}) {
   const [position, setPosition] = useState<[number, number] | null>(null);
 
   const MapEvents = () => {
@@ -125,7 +155,11 @@ function LocationPicker({ onSelect }: { onSelect: (lat: number, lng: number) => 
 
   return (
     <div className="h-96 rounded-lg overflow-hidden">
-      <MapContainer center={[37.7749, -122.4194]} zoom={13} style={{ height: '100%', width: '100%' }}>
+      <MapContainer
+        center={[37.7749, -122.4194]}
+        zoom={13}
+        style={{ height: "100%", width: "100%" }}
+      >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -137,26 +171,32 @@ function LocationPicker({ onSelect }: { onSelect: (lat: number, lng: number) => 
 }
 
 function App() {
-  const [agentName, setAgentName] = useState('');
-  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
-  const [screenPosition, setScreenPosition] = useState<ScreenPosition>({ x: 50, y: 50, z_index: 1 });
+  const [agentName, setAgentName] = useState("");
+  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(
+    null,
+  );
+  const [screenPosition, setScreenPosition] = useState<ScreenPosition>({
+    x: 50,
+    y: 50,
+    z_index: 1,
+  });
   const [paymentEnabled, setPaymentEnabled] = useState(true);
   const [deploying, setDeploying] = useState(false);
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState("");
 
   const handleDeploy = async () => {
     if (!agentName || !location) {
-      setMessage('❌ Please fill in agent name and select location');
+      setMessage("❌ Please fill in agent name and select location");
       return;
     }
 
     setDeploying(true);
-    setMessage('');
+    setMessage("");
 
     try {
       const dbClient = createCubePayDatabase(
         import.meta.env.VITE_SUPABASE_URL,
-        import.meta.env.VITE_SUPABASE_ANON_KEY
+        import.meta.env.VITE_SUPABASE_ANON_KEY,
       );
 
       await dbClient.deployAgent({
@@ -167,11 +207,13 @@ function App() {
         payment_enabled: paymentEnabled,
       });
 
-      setMessage('✅ Agent deployed successfully!');
-      setAgentName('');
+      setMessage("✅ Agent deployed successfully!");
+      setAgentName("");
       setLocation(null);
     } catch (error) {
-      setMessage(`❌ Deployment failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setMessage(
+        `❌ Deployment failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
     } finally {
       setDeploying(false);
     }
@@ -182,7 +224,9 @@ function App() {
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-2">🎲 CubePay Deployment Hub</h1>
-          <p className="text-gray-400">Deploy payment agents to real-world locations</p>
+          <p className="text-gray-400">
+            Deploy payment agents to real-world locations
+          </p>
         </div>
 
         <div className="grid lg:grid-cols-3 gap-8">
@@ -190,9 +234,11 @@ function App() {
           <div className="space-y-6">
             <div className="bg-gray-800 rounded-lg p-6 space-y-4">
               <h2 className="text-xl font-semibold mb-4">Agent Details</h2>
-              
+
               <div>
-                <label className="block text-sm text-gray-300 mb-2">Agent Name</label>
+                <label className="block text-sm text-gray-300 mb-2">
+                  Agent Name
+                </label>
                 <input
                   type="text"
                   value={agentName}
@@ -210,14 +256,18 @@ function App() {
                     onChange={(e) => setPaymentEnabled(e.target.checked)}
                     className="w-5 h-5 text-blue-500"
                   />
-                  <span className="text-sm text-gray-300">Enable Payment Cube</span>
+                  <span className="text-sm text-gray-300">
+                    Enable Payment Cube
+                  </span>
                 </label>
               </div>
             </div>
 
             <div className="bg-gray-800 rounded-lg p-6">
               <h2 className="text-xl font-semibold mb-4">Screen Position</h2>
-              <p className="text-sm text-gray-400 mb-4">Position where agent appears in AR view (percentage of screen)</p>
+              <p className="text-sm text-gray-400 mb-4">
+                Position where agent appears in AR view (percentage of screen)
+              </p>
               <ScreenPositionPicker onSelect={setScreenPosition} />
             </div>
 
@@ -226,11 +276,13 @@ function App() {
               disabled={deploying || !agentName || !location}
               className="w-full py-4 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed rounded-lg font-semibold text-lg transition-colors"
             >
-              {deploying ? '🚀 Deploying...' : '🎲 Deploy Agent'}
+              {deploying ? "🚀 Deploying..." : "🎲 Deploy Agent"}
             </button>
 
             {message && (
-              <div className={`p-4 rounded-lg ${message.startsWith('✅') ? 'bg-green-900 bg-opacity-50' : 'bg-red-900 bg-opacity-50'}`}>
+              <div
+                className={`p-4 rounded-lg ${message.startsWith("✅") ? "bg-green-900 bg-opacity-50" : "bg-red-900 bg-opacity-50"}`}
+              >
                 {message}
               </div>
             )}
@@ -239,8 +291,12 @@ function App() {
           {/* Middle Column - Cube Preview */}
           <div className="space-y-6">
             <div className="bg-gray-800 rounded-lg p-6">
-              <h2 className="text-xl font-semibold mb-4">Payment Cube Preview</h2>
-              <p className="text-sm text-gray-400 mb-4">This is how your payment cube will appear in AR</p>
+              <h2 className="text-xl font-semibold mb-4">
+                Payment Cube Preview
+              </h2>
+              <p className="text-sm text-gray-400 mb-4">
+                This is how your payment cube will appear in AR
+              </p>
               <div className="relative w-full h-96 rounded-lg overflow-hidden bg-gray-900">
                 <CubePreview autoRotate={true} showLabels={true} />
               </div>
@@ -251,11 +307,16 @@ function App() {
           <div className="space-y-6">
             <div className="bg-gray-800 rounded-lg p-6">
               <h2 className="text-xl font-semibold mb-4">Physical Location</h2>
-              <p className="text-sm text-gray-400 mb-4">Click on the map to select deployment location</p>
-              <LocationPicker onSelect={(lat, lng) => setLocation({ lat, lng })} />
+              <p className="text-sm text-gray-400 mb-4">
+                Click on the map to select deployment location
+              </p>
+              <LocationPicker
+                onSelect={(lat, lng) => setLocation({ lat, lng })}
+              />
               {location && (
                 <div className="mt-4 text-sm text-gray-300">
-                  📍 Selected: {location.lat.toFixed(6)}, {location.lng.toFixed(6)}
+                  📍 Selected: {location.lat.toFixed(6)},{" "}
+                  {location.lng.toFixed(6)}
                 </div>
               )}
             </div>
