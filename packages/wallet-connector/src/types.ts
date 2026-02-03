@@ -200,3 +200,16 @@ export interface ArcUnifiedBalance {
   balancesByChain: Record<string, string>;
   availableForInstantTransfer: boolean;
 }
+
+/**
+ * Payment Execution Result
+ */
+
+export interface PaymentExecutionResult {
+  success: boolean;
+  transactionHash?: string;
+  blockNumber?: number;
+  status: "pending" | "confirmed" | "failed";
+  error?: string;
+  confirmations?: number;
+}
