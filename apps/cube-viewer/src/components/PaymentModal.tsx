@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { usePaymentStore } from "../stores/paymentStore";
-import { X, Wallet, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
+import { X, Wallet, CheckCircle, AlertCircle, Loader2, Zap } from "lucide-react";
 import QRCode from "qrcode";
-import { WalletConnector } from "@cubepay/wallet-connector";
+import { WalletConnector, createGatewayClient } from "@cubepay/wallet-connector";
 import {
   executeEVMUSDCPayment,
   executeSolanaUSDCPayment,
 } from "@cubepay/wallet-connector";
-import type { PaymentExecutionResult } from "@cubepay/wallet-connector";
+import type { PaymentExecutionResult, UnifiedBalance } from "@cubepay/wallet-connector";
 import {
   createPaymentSession,
   updatePaymentSession,
@@ -18,11 +18,16 @@ export const PaymentModal: React.FC = () => {
     usePaymentStore();
   const [qrCodeUrl, setQrCodeUrl] = useState("");
   const [walletConnector] = useState(() => new WalletConnector());
+  const [gatewayClient] = useState(() => createGatewayClient());
   const [isWalletConnected, setIsWalletConnected] = useState(false);
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [ensName, setEnsName] = useState<string | null>(null);
   const [paymentAmount, setPaymentAmount] = useState("10");
   const [selectedChain, setSelectedChain] = useState<number>(11155111); // Ethereum Sepolia
+  const [destinationChain, setDestinationChain] = useState<number>(84532); // Base Sepolia
+  const [useCrossChain, setUseCrossChain] = useState(false);
+  const [unifiedBalance, setUnifiedBalance] = useState<UnifiedBalance | null>(null);
+  const [isLoadingBalance, setIsLoadingBalance] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState<
     "idle" | "connecting" | "processing" | "success" | "error"
   >("idle");
@@ -58,9 +63,25 @@ export const PaymentModal: React.FC = () => {
       setWalletAddress(state.address);
       setEnsName(state.ensName || null);
       setPaymentStatus("idle");
+      
+      // Load unified balance
+      loadUnifiedBalance(state.address!);
     } catch (error) {
       setPaymentStatus("error");
       setErrorMessage((error as Error).message);
+    }
+  };
+
+  // Load unified balance across all chains
+  const loadUnifiedBalance = async (address: string) => {
+    setIsLoadingBalance(true);
+    try {
+      const balance = await gatewayClient.getUnifiedBalance(address);
+      setUnifiedBalance(balance);
+    } catch (error) {
+      console.error("Failed to load unified balance:", error);
+    } finally {
+      setIsLoadingBalance(false);
     }
   };
 
@@ -244,6 +265,22 @@ export const PaymentModal: React.FC = () => {
           <p className="text-cubepay-text-secondary text-sm font-mono">
             {walletAddress?.slice(0, 6)}...{walletAddress?.slice(-4)}
           </p>
+          
+          {/* Unified Balance Display */}
+          {unifiedBalance && (
+            <div className="mt-3 pt-3 border-t border-green-600/30">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs text-cubepay-text-secondary">Total USDC</span>
+                {isLoadingBalance && <Loader2 className="animate-spin" size={12} />}
+              </div>
+              <p className="text-lg font-bold text-green-400">
+                ${unifiedBalance.totalUSDC}
+              </p>
+              <p className="text-xs text-cubepay-text-secondary mt-1">
+                Across {unifiedBalance.availableChains.length} chains via Arc 🌉
+              </p>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -252,6 +289,30 @@ export const PaymentModal: React.FC = () => {
   // Render payment form
   const renderPaymentForm = () => (
     <div className="space-y-4">
+      {/* Cross-Chain Toggle */}
+      <div className="bg-blue-900/20 border border-blue-600/30 rounded-lg p-4">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <Zap size={20} className="text-blue-400" />
+            <span className="text-sm font-semibold text-blue-400">
+              Arc Cross-Chain Payment
+            </span>
+          </div>
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              checked={useCrossChain}
+              onChange={(e) => setUseCrossChain(e.target.checked)}
+              className="sr-only peer"
+            />
+            <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+          </label>
+        </div>
+        <p className="text-xs text-cubepay-text-secondary">
+          Pay from any chain to any chain using Circle Gateway
+        </p>
+      </div>
+
       {/* Recipient Address/ENS Input */}
       <div>
         <label className="block text-sm text-cubepay-text-secondary mb-2">
@@ -271,14 +332,38 @@ export const PaymentModal: React.FC = () => {
         )}
       </div>
 
-      {/* Chain Selector */}
+      {/* Source Chain Selector (only show if cross-chain) */}
+      {useCrossChain && (
+        <div>
+          <label className="block text-sm text-cubepay-text-secondary mb-2">
+            Source Network (Your Chain)
+          </label>
+          <select
+            value={selectedChain}
+            onChange={(e) => setSelectedChain(Number(e.target.value))}
+            className="w-full bg-cubepay-card text-cubepay-text px-4 py-3 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            {chains.map((chain) => (
+              <option key={chain.id} value={chain.id}>
+                {chain.name} ({chain.symbol})
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {/* Destination Chain Selector */}
       <div>
         <label className="block text-sm text-cubepay-text-secondary mb-2">
-          Network
+          {useCrossChain ? "Destination Network (Agent's Chain)" : "Network"}
         </label>
         <select
-          value={selectedChain}
-          onChange={(e) => setSelectedChain(Number(e.target.value))}
+          value={useCrossChain ? destinationChain : selectedChain}
+          onChange={(e) =>
+            useCrossChain
+              ? setDestinationChain(Number(e.target.value))
+              : setSelectedChain(Number(e.target.value))
+          }
           className="w-full bg-cubepay-card text-cubepay-text px-4 py-3 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
         >
           {chains.map((chain) => (
@@ -287,6 +372,12 @@ export const PaymentModal: React.FC = () => {
             </option>
           ))}
         </select>
+        {useCrossChain && selectedChain !== destinationChain && (
+          <p className="text-blue-400 text-xs mt-1 flex items-center gap-1">
+            <Zap size={12} />
+            Arc Gateway will route automatically
+          </p>
+        )}
       </div>
 
       {/* Amount Input */}

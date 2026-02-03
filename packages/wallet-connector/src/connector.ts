@@ -3,6 +3,7 @@ import { createThirdwebClient, defineChain } from "thirdweb";
 import { inAppWallet, createWallet } from "thirdweb/wallets";
 import { ConnectButton, useActiveAccount, useConnect } from "thirdweb/react";
 import { ethers } from "ethers";
+import { createGatewayClient, CircleGatewayClient } from "./circleGateway";
 import type {
   WalletType,
   WalletState,
@@ -35,6 +36,7 @@ export class WalletConnector extends EventEmitter<WalletEvents> {
   private chainAbstraction: ChainAbstractionConfig;
   private providers: Map<WalletType, any> = new Map();
   private thirdwebClient: any;
+  private gatewayClient: CircleGatewayClient;
 
   constructor(chainAbstractionConfig?: Partial<ChainAbstractionConfig>) {
     super();
@@ -43,6 +45,9 @@ export class WalletConnector extends EventEmitter<WalletEvents> {
     this.thirdwebClient = createThirdwebClient({
       clientId: process.env.VITE_THIRDWEB_CLIENT_ID || "",
     });
+
+    // Initialize Circle Gateway client for Arc chain abstraction
+    this.gatewayClient = createGatewayClient();
 
     // Default Arc-focused configuration
     this.chainAbstraction = {
@@ -323,6 +328,7 @@ export class WalletConnector extends EventEmitter<WalletEvents> {
 
   /**
    * Execute payment through Arc Gateway (instant <500ms)
+   * Uses Circle Gateway for cross-chain USDC transfers
    */
   private async executeArcPayment(
     payment: ChainAbstractedPayment,
@@ -331,35 +337,47 @@ export class WalletConnector extends EventEmitter<WalletEvents> {
       throw new Error("Arc Gateway not enabled");
     }
 
-    // TODO: Integrate Circle Gateway + Bridge Kit
-    throw new Error("Arc Gateway integration pending - requires Circle SDK");
-
-    // Example flow:
-    /*
-    // 1. Check Arc unified balance
-    const balance = await this.getArcUnifiedBalance(this.state.address!);
-    
-    // 2. If insufficient, deposit from source chain
-    if (parseFloat(balance.totalUSDC) < parseFloat(payment.sourceAmount)) {
-      await this.depositToArcGateway(payment.sourceChain!, payment.sourceAmount);
+    if (!this.state.connected || !this.state.chainId) {
+      throw new Error("Wallet not connected");
     }
-    
-    // 3. Instant transfer to destination (<500ms)
-    const tx = await arcGateway.transfer({
-      from: this.state.address!,
-      to: payment.destinationAddress,
-      amount: payment.sourceAmount,
-      destinationChain: payment.destinationChain,
-      token: 'USDC'
-    });
-    
-    return {
-      hash: tx.hash,
-      status: 'confirmed',
-      confirmations: 1,
-      blockNumber: tx.blockNumber
-    };
-    */
+
+    try {
+      // Get current provider
+      const provider = this.providers.get(this.state.type!);
+      if (!provider) {
+        throw new Error("Provider not available");
+      }
+
+      // Parse chain IDs
+      const sourceChainId = parseInt(this.state.chainId);
+      const destinationChainId = parseInt(payment.destinationChain);
+
+      console.log(
+        `🌉 Arc Gateway: Initiating transfer from chain ${sourceChainId} → ${destinationChainId}`
+      );
+
+      // Execute cross-chain transfer via Circle Gateway
+      const result = await this.gatewayClient.executeCrossChainTransfer(
+        {
+          sourceChainId,
+          destinationChainId,
+          amount: payment.sourceAmount,
+          destinationAddress: payment.destinationAddress,
+          sourceAddress: this.state.address!,
+        },
+        (window as any).ethereum || provider
+      );
+
+      return {
+        hash: result.sourceTransactionHash || "",
+        status: result.status === "completed" ? "confirmed" : "pending",
+        confirmations: result.status === "completed" ? 1 : 0,
+        blockNumber: 0,
+      };
+    } catch (error) {
+      console.error("Arc payment failed:", error);
+      throw error;
+    }
   }
 
   /**
@@ -417,19 +435,31 @@ export class WalletConnector extends EventEmitter<WalletEvents> {
 
   /**
    * Get Arc unified USDC balance across all chains
+   * Uses Circle Gateway to aggregate balances from multiple chains
    */
   async getArcUnifiedBalance(address: string): Promise<ArcUnifiedBalance> {
-    // TODO: Query Circle Gateway for unified balance
-    throw new Error("Arc unified balance query pending");
+    if (!this.chainAbstraction.arc.unifiedBalance) {
+      throw new Error("Arc unified balance not enabled");
+    }
 
-    /*
-    const balance = await arcGateway.getUnifiedBalance(address);
-    return {
-      totalUSDC: balance.total,
-      balancesByChain: balance.byChain,
-      availableForInstantTransfer: balance.total > '0'
-    };
-    */
+    try {
+      const balance = await this.gatewayClient.getUnifiedBalance(address);
+      
+      // Convert numeric chain IDs to string format for compatibility
+      const balancesByChain: Record<string, string> = {};
+      for (const [chainId, amount] of Object.entries(balance.balancesByChain)) {
+        balancesByChain[chainId] = amount;
+      }
+
+      return {
+        totalUSDC: balance.totalUSDC,
+        balancesByChain,
+        availableForInstantTransfer: parseFloat(balance.totalUSDC) > 0,
+      };
+    } catch (error) {
+      console.error("Failed to fetch unified balance:", error);
+      throw error;
+    }
   }
 
   // =====================================================

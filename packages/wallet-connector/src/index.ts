@@ -33,3 +33,15 @@ export {
   USDC_ADDRESSES,
   SOLANA_USDC_ADDRESSES,
 } from "./payments";
+
+export {
+  CircleGatewayClient,
+  createGatewayClient,
+} from "./circleGateway";
+
+export type {
+  GatewayConfig,
+  CrossChainTransferRequest,
+  TransferStatus,
+  UnifiedBalance,
+} from "./circleGateway";
