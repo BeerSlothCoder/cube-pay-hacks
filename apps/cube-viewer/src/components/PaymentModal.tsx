@@ -7,6 +7,8 @@ import {
   AlertCircle,
   Loader2,
   Zap,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import QRCode from "qrcode";
 import {
@@ -27,6 +29,9 @@ import {
   createPaymentSession,
   updatePaymentSession,
 } from "../utils/paymentSessions";
+import { ensPaymentService } from "../services/ensPaymentService";
+import { ENSPaymentDisplay } from "./ENSPaymentDisplay";
+import type { ENSPaymentConfig } from "../services/ensPaymentService";
 
 export const PaymentModal: React.FC = () => {
   const { selectedPaymentFace, selectedAgent, closePaymentModal } =
@@ -55,6 +60,12 @@ export const PaymentModal: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [recipientInput, setRecipientInput] = useState<string>("");
   const [isResolvingENS, setIsResolvingENS] = useState(false);
+
+  // ENS Payment State
+  const [ensPaymentConfig, setENSPaymentConfig] =
+    useState<ENSPaymentConfig | null>(null);
+  const [ensNetwork] = useState<"mainnet" | "sepolia">("sepolia");
+  const [showENSAdvanced, setShowENSAdvanced] = useState(false);
 
   useEffect(() => {
     if (selectedPaymentFace === "crypto_qr" && selectedAgent) {
@@ -123,6 +134,44 @@ export const PaymentModal: React.FC = () => {
     return () => clearTimeout(debounce);
   }, [recipientInput, paymentAmount]);
 
+  // ENS Payment Resolution Effect
+  useEffect(() => {
+    const resolveENSPayment = async () => {
+      if (
+        selectedPaymentFace === "ens_payment" &&
+        recipientInput.endsWith(".eth")
+      ) {
+        setIsResolvingENS(true);
+        try {
+          const config = await ensPaymentService.resolveENSPayment(
+            recipientInput,
+            ensNetwork,
+          );
+          if (config) {
+            setENSPaymentConfig(config);
+
+            // Auto-select recommended chain if available
+            const recommendedChain =
+              ensPaymentService.getRecommendedChain(config);
+            if (recommendedChain) {
+              setSelectedChain(recommendedChain.chainId);
+            }
+          } else {
+            setENSPaymentConfig(null);
+          }
+        } catch (error) {
+          console.error("Failed to resolve ENS payment config:", error);
+          setENSPaymentConfig(null);
+        } finally {
+          setIsResolvingENS(false);
+        }
+      }
+    };
+
+    const debounce = setTimeout(resolveENSPayment, 500);
+    return () => clearTimeout(debounce);
+  }, [recipientInput, selectedPaymentFace, ensNetwork]);
+
   // Connect wallet
   const handleConnectWallet = async (
     walletType: "metamask" | "phantom" | "hashpack",
@@ -170,12 +219,18 @@ export const PaymentModal: React.FC = () => {
 
     try {
       let result: PaymentExecutionResult;
+      let recipientAddress = selectedAgent.agent_wallet!;
+
+      // If ENS payment, use resolved address
+      if (selectedPaymentFace === "ens_payment" && ensPaymentConfig) {
+        recipientAddress = ensPaymentConfig.resolvedAddress;
+      }
 
       // Determine payment method based on selected chain
       if (selectedChain === 900) {
         // Solana
         result = await executeSolanaUSDCPayment(
-          selectedAgent.agent_wallet!,
+          recipientAddress,
           parseFloat(paymentAmount),
           (window as any).phantom?.solana,
           "devnet",
@@ -189,7 +244,7 @@ export const PaymentModal: React.FC = () => {
         // EVM chains
         result = await executeEVMUSDCPayment(
           selectedChain,
-          selectedAgent.agent_wallet!,
+          recipientAddress,
           parseFloat(paymentAmount),
           (window as any).ethereum,
         );
@@ -203,13 +258,19 @@ export const PaymentModal: React.FC = () => {
         const sessionId = await createPaymentSession({
           agent_id: selectedAgent.id,
           payer_wallet: walletAddress,
-          recipient_wallet: selectedAgent.agent_wallet!,
+          recipient_wallet: recipientAddress,
           amount: parseFloat(paymentAmount),
           token: "USDC",
           chain_id: selectedChain,
           transaction_hash: result.transactionHash,
           status: result.status === "confirmed" ? "confirmed" : "pending",
           payment_face: selectedPaymentFace,
+          metadata: {
+            ensName:
+              selectedPaymentFace === "ens_payment"
+                ? recipientInput
+                : undefined,
+          },
         });
 
         // Update with block number if available
@@ -226,7 +287,7 @@ export const PaymentModal: React.FC = () => {
         await createPaymentSession({
           agent_id: selectedAgent.id,
           payer_wallet: walletAddress,
-          recipient_wallet: selectedAgent.agent_wallet!,
+          recipient_wallet: recipientAddress,
           amount: parseFloat(paymentAmount),
           token: "USDC",
           chain_id: selectedChain,
@@ -707,14 +768,214 @@ export const PaymentModal: React.FC = () => {
 
         {selectedPaymentFace === "ens_payment" && (
           <div className="space-y-4">
-            <input
-              type="text"
-              placeholder="vitalik.eth"
-              className="w-full bg-cubepay-card text-cubepay-text px-4 py-3 rounded-lg outline-none focus:ring-2 focus:ring-yellow-500"
-            />
-            <button className="w-full bg-yellow-600 hover:bg-yellow-700 text-white py-3 rounded-lg font-semibold">
-              Pay with ENS
-            </button>
+            {renderWalletConnection()}
+
+            {isWalletConnected && (
+              <>
+                {/* ENS Domain Input */}
+                <div>
+                  <label className="block text-sm text-amber-300 mb-2">
+                    ENS Domain
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={recipientInput}
+                      onChange={(e) =>
+                        setRecipientInput(
+                          e.target.value.toLowerCase().endsWith(".eth")
+                            ? e.target.value
+                            : e.target.value,
+                        )
+                      }
+                      placeholder="cube-pay.eth"
+                      className="w-full bg-cubepay-card text-cubepay-text px-4 py-3 rounded-lg outline-none focus:ring-2 focus:ring-amber-500"
+                    />
+                    {isResolvingENS && (
+                      <div className="absolute right-3 top-3">
+                        <Loader2
+                          className="animate-spin text-amber-400"
+                          size={20}
+                        />
+                      </div>
+                    )}
+                  </div>
+                  {!recipientInput.endsWith(".eth") && recipientInput && (
+                    <p className="text-xs text-red-400 mt-1">
+                      ⚠️ Please enter a valid .eth domain
+                    </p>
+                  )}
+                </div>
+
+                {/* ENS Payment Config Display */}
+                {ensPaymentConfig && (
+                  <>
+                    <ENSPaymentDisplay
+                      config={ensPaymentConfig}
+                      amount={parseFloat(paymentAmount) || undefined}
+                      showValidation={true}
+                      compact={false}
+                    />
+
+                    {/* Advanced Options Toggle */}
+                    <button
+                      onClick={() => setShowENSAdvanced(!showENSAdvanced)}
+                      className="flex items-center gap-2 text-amber-400 hover:text-amber-300 text-sm transition-colors w-full justify-center"
+                    >
+                      {showENSAdvanced ? (
+                        <>
+                          <EyeOff size={16} />
+                          Hide Details
+                        </>
+                      ) : (
+                        <>
+                          <Eye size={16} />
+                          Show Details
+                        </>
+                      )}
+                    </button>
+
+                    {/* Advanced Options */}
+                    {showENSAdvanced && (
+                      <div className="bg-amber-900/20 border border-amber-600/30 rounded-lg p-3 space-y-2">
+                        {ensPaymentConfig.preferredChain && (
+                          <div className="text-xs space-y-1">
+                            <p className="text-amber-300">Recommended:</p>
+                            <p className="text-amber-200 font-semibold">
+                              {ensPaymentConfig.preferredChain}
+                            </p>
+                          </div>
+                        )}
+                        {ensPaymentConfig.preferredToken && (
+                          <div className="text-xs space-y-1">
+                            <p className="text-amber-300">Preferred Token:</p>
+                            <p className="text-amber-200 font-semibold">
+                              {ensPaymentConfig.preferredToken}
+                            </p>
+                          </div>
+                        )}
+                        <a
+                          href={`https://app.ens.domains/${recipientInput}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-amber-400 hover:text-amber-300 text-xs block mt-2"
+                        >
+                          View on ENS →
+                        </a>
+                      </div>
+                    )}
+
+                    {/* Payment Form */}
+                    <div className="space-y-3 border-t border-amber-600/30 pt-4">
+                      {/* Amount */}
+                      <div>
+                        <label className="block text-sm text-cubepay-text-secondary mb-2">
+                          Amount (USDC)
+                        </label>
+                        <input
+                          type="number"
+                          value={paymentAmount}
+                          onChange={(e) => setPaymentAmount(e.target.value)}
+                          min="0.01"
+                          step="0.01"
+                          className="w-full bg-cubepay-card text-cubepay-text px-4 py-3 rounded-lg outline-none focus:ring-2 focus:ring-amber-500"
+                        />
+                      </div>
+
+                      {/* Chain Selection */}
+                      <div>
+                        <label className="block text-sm text-cubepay-text-secondary mb-2">
+                          Network
+                        </label>
+                        <select
+                          value={selectedChain}
+                          onChange={(e) =>
+                            setSelectedChain(Number(e.target.value))
+                          }
+                          className="w-full bg-cubepay-card text-cubepay-text px-4 py-3 rounded-lg outline-none focus:ring-2 focus:ring-amber-500"
+                        >
+                          {[
+                            {
+                              id: 11155111,
+                              name: "Ethereum Sepolia",
+                              symbol: "ETH",
+                            },
+                            {
+                              id: 84532,
+                              name: "Base Sepolia",
+                              symbol: "ETH",
+                            },
+                            {
+                              id: 421614,
+                              name: "Arbitrum Sepolia",
+                              symbol: "ETH",
+                            },
+                            {
+                              id: 80002,
+                              name: "Polygon Amoy",
+                              symbol: "MATIC",
+                            },
+                          ].map((chain) => (
+                            <option key={chain.id} value={chain.id}>
+                              {chain.name} ({chain.symbol})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Pay Button */}
+                      <button
+                        onClick={handlePayment}
+                        disabled={
+                          !isWalletConnected ||
+                          paymentStatus === "processing" ||
+                          !recipientInput.endsWith(".eth") ||
+                          !ensPaymentConfig
+                        }
+                        className="w-full bg-amber-600 hover:bg-amber-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white py-3 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2"
+                      >
+                        {paymentStatus === "processing" ? (
+                          <>
+                            <Loader2 className="animate-spin" size={20} />
+                            Processing...
+                          </>
+                        ) : (
+                          `Pay ${paymentAmount} USDC to ${recipientInput}`
+                        )}
+                      </button>
+                    </div>
+                  </>
+                )}
+
+                {/* Resolution in progress */}
+                {isResolvingENS && (
+                  <div className="flex items-center justify-center gap-2 text-amber-400">
+                    <Loader2 className="animate-spin" size={20} />
+                    <span>Resolving {recipientInput}...</span>
+                  </div>
+                )}
+
+                {/* Resolution error */}
+                {recipientInput.endsWith(".eth") &&
+                  !ensPaymentConfig &&
+                  !isResolvingENS && (
+                    <div className="bg-red-900/30 border border-red-600/30 rounded-lg p-3">
+                      <div className="flex items-center gap-2 text-red-400 mb-1">
+                        <AlertCircle size={16} />
+                        <span className="text-sm font-semibold">
+                          Domain not found
+                        </span>
+                      </div>
+                      <p className="text-xs text-red-300/70">
+                        Unable to resolve {recipientInput} on {ensNetwork}
+                      </p>
+                    </div>
+                  )}
+
+                {/* Transaction Status */}
+                {renderTransactionStatus()}
+              </>
+            )}
           </div>
         )}
 
