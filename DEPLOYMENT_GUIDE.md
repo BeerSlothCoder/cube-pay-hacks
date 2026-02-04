@@ -60,6 +60,7 @@ This guide provides step-by-step instructions for deploying the complete ENS pay
 ```
 
 **Expected Output:**
+
 ```
 CubePay database setup completed successfully!
 Tables: deployed_objects, ar_qr_codes
@@ -85,12 +86,13 @@ Verify RLS policies are active:
 
 ```sql
 -- In Supabase SQL Editor, verify policies exist:
-SELECT schemaname, tablename, policyname 
-FROM pg_policies 
+SELECT schemaname, tablename, policyname
+FROM pg_policies
 WHERE tablename IN ('deployed_objects', 'ar_qr_codes');
 ```
 
 Expected policies:
+
 - `Anyone can read deployed objects`
 - `Users can insert objects`
 - `Users can update their own objects`
@@ -177,6 +179,7 @@ yarn build
 ```
 
 **Expected Output:**
+
 ```
 Building cube-viewer...
 ✓ Built in 45s
@@ -226,6 +229,7 @@ yarn preview
 ### Option A: Deploy to Vercel (Recommended)
 
 1. **Connect Repository:**
+
 ```bash
 npm install -g vercel
 vercel link
@@ -236,6 +240,7 @@ vercel link
    - Add production values from `.env.production`
 
 3. **Deploy:**
+
 ```bash
 vercel --prod
 ```
@@ -319,6 +324,7 @@ SELECT * FROM ar_qr_codes ORDER BY created_at DESC LIMIT 5;
    - Set up alerts for high query times
 
 2. **Error Tracking (Sentry):**
+
 ```bash
 npm install @sentry/react @sentry/tracing
 ```
@@ -333,6 +339,7 @@ npm install @sentry/react @sentry/tracing
 ### Issue: "Unable to resolve cube-pay.eth"
 
 **Solution:**
+
 ```env
 # Verify ENS RPC is correct for network
 VITE_ENS_RESOLVER_NETWORK=sepolia  # or mainnet
@@ -342,6 +349,7 @@ VITE_ENS_RPC_ENDPOINT=https://sepolia.infura.io/v3/YOUR_KEY
 ### Issue: "Payment failed - wallet not connected"
 
 **Solution:**
+
 - Verify user selected correct network (Sepolia for testnet)
 - Check wallet has sufficient test ETH/USDC balance
 - Verify ThirdWeb credentials are valid
@@ -349,6 +357,7 @@ VITE_ENS_RPC_ENDPOINT=https://sepolia.infura.io/v3/YOUR_KEY
 ### Issue: "Database connection failed"
 
 **Solution:**
+
 ```env
 # Verify Supabase URL is correct
 VITE_SUPABASE_URL=https://your-project-id.supabase.co
@@ -358,6 +367,7 @@ VITE_SUPABASE_ANON_KEY=correct-api-key
 ### Issue: "Slow ENS resolution"
 
 **Solution:**
+
 - ENS client caches results for 1 hour
 - Clear cache if needed: `ensPaymentService.clearCache()`
 - Check RPC endpoint load
@@ -369,12 +379,14 @@ VITE_SUPABASE_ANON_KEY=correct-api-key
 If issues occur in production:
 
 1. **Revert Code:**
+
 ```bash
 git revert HEAD
 git push origin main  # Auto-deploys if CI/CD configured
 ```
 
 2. **Revert Database:**
+
 ```sql
 -- Backup current state
 -- Restore from snapshot in Supabase
@@ -384,6 +396,7 @@ DELETE FROM ar_qr_codes WHERE created_at > '2026-02-04';
 ```
 
 3. **Revert Environment:**
+
 ```bash
 # Restore previous .env.production values
 # Re-deploy with old credentials
@@ -394,16 +407,19 @@ DELETE FROM ar_qr_codes WHERE created_at > '2026-02-04';
 ## Part 10: Next Steps
 
 ### Short Term (Week 1)
+
 - [ ] Monitor production for issues
 - [ ] Collect user feedback
 - [ ] Fix any critical bugs
 
 ### Medium Term (Month 1)
+
 - [ ] Add CI/CD pipeline (GitHub Actions)
 - [ ] Implement automated testing
 - [ ] Add more ENS domains per agent
 
 ### Long Term (Quarter 1)
+
 - [ ] Migrate from Sepolia testnet to mainnet
 - [ ] Add more blockchains (Polygon, Arbitrum, etc.)
 - [ ] Implement advanced ENS features (multiple addresses per chain)
@@ -422,12 +438,13 @@ DELETE FROM ar_qr_codes WHERE created_at > '2026-02-04';
 ## Contact
 
 For deployment issues or questions:
+
 - Create GitHub issue in cube-pay-hacks
 - Contact DevOps team
 - Check deployment logs in Vercel/Netlify dashboard
 
 ---
 
-**Deployment Date:** _________________  
-**Deployed By:** _________________  
+**Deployment Date:** ********\_********  
+**Deployed By:** ********\_********  
 **Status:** 🟢 Production Ready

@@ -175,6 +175,21 @@ export const PaymentCube: React.FC<CubeProps> = ({ agent }) => {
       {/* Agent Info */}
       <div className="absolute bottom-0 left-0 right-0 bg-cubepay-bg bg-opacity-90 p-3 text-center">
         <p className="text-cubepay-text font-semibold">{agent.agent_name}</p>
+
+        {/* ENS Domain Display */}
+        {agent.ens_domain && (
+          <div className="my-2 flex items-center justify-center gap-1">
+            <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full font-mono">
+              {agent.ens_domain}
+            </span>
+            {agent.ens_verified && (
+              <span className="text-xs bg-green-100 text-green-800 px-1.5 py-0.5 rounded-full">
+                ✓
+              </span>
+            )}
+          </div>
+        )}
+
         <p className="text-cubepay-text-secondary text-sm">
           Select a payment method
         </p>

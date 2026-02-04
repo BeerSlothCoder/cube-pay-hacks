@@ -205,6 +205,7 @@ jobs:
 ### Required Check
 
 Before deployment, GitHub will verify:
+
 - All referenced secrets exist
 - Secrets are not empty
 - Workflow has proper permissions
@@ -218,6 +219,7 @@ Before deployment, GitHub will verify:
 **Cause:** Missing or incorrect Vercel project ID
 
 **Solution:**
+
 ```bash
 # Verify project IDs
 vercel projects --token YOUR_TOKEN
@@ -230,6 +232,7 @@ vercel projects --token YOUR_TOKEN
 **Cause:** Token is expired or invalid
 
 **Solution:**
+
 ```bash
 # Generate new token
 # Go to https://vercel.com/account/tokens
@@ -243,6 +246,7 @@ vercel projects --token YOUR_TOKEN
 **Cause:** Token has insufficient scopes
 
 **Solution:**
+
 ```bash
 # Create new token with full access
 # Or enable needed scopes:
@@ -256,6 +260,7 @@ vercel projects --token YOUR_TOKEN
 **Cause:** Wrong branch protection rules
 
 **Solution:**
+
 ```bash
 # Go to Repository > Settings > Branches
 # Ensure CI/CD checks are configured
@@ -266,14 +271,14 @@ vercel projects --token YOUR_TOKEN
 
 ## Reference
 
-| Secret | Type | Required | Expires | Scope |
-|--------|------|----------|---------|-------|
-| VERCEL_TOKEN | API Key | YES | N/A | Full |
-| VERCEL_ORG_ID | ID | YES | N/A | Read |
-| VERCEL_PROJECT_ID_* | ID | YES | N/A | Read |
-| SUPABASE_PROJECT_URL | URL | NO | N/A | Read |
-| SUPABASE_ANON_KEY | API Key | NO | N/A | Read |
-| SLACK_WEBHOOK_URL | URL | NO | N/A | Post |
+| Secret               | Type    | Required | Expires | Scope |
+| -------------------- | ------- | -------- | ------- | ----- |
+| VERCEL_TOKEN         | API Key | YES      | N/A     | Full  |
+| VERCEL_ORG_ID        | ID      | YES      | N/A     | Read  |
+| VERCEL*PROJECT_ID*\* | ID      | YES      | N/A     | Read  |
+| SUPABASE_PROJECT_URL | URL     | NO       | N/A     | Read  |
+| SUPABASE_ANON_KEY    | API Key | NO       | N/A     | Read  |
+| SLACK_WEBHOOK_URL    | URL     | NO       | N/A     | Post  |
 
 ---
 

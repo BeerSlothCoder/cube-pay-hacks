@@ -39,20 +39,45 @@ export const AgentOverlay: React.FC<AgentOverlayProps> = ({ filter }) => {
         const x = (agent.screen_position.x / 100) * canvas.width;
         const y = (agent.screen_position.y / 100) * canvas.height;
 
+        // Determine color based on ENS status
+        const baseColor = agent.ens_payment_enabled 
+          ? 'rgba(245, 158, 11, 0.8)' // Amber for ENS-enabled
+          : 'rgba(30, 64, 175, 0.8)'; // Blue for normal
+
         // Draw circle
         ctx.beginPath();
         ctx.arc(x, y, 30, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(30, 64, 175, 0.8)'; // Blue
+        ctx.fillStyle = baseColor;
         ctx.fill();
-        ctx.strokeStyle = 'white';
-        ctx.lineWidth = 3;
+        ctx.strokeStyle = agent.ens_payment_enabled ? '#F59E0B' : 'white';
+        ctx.lineWidth = agent.ens_payment_enabled ? 4 : 3;
         ctx.stroke();
+
+        // Draw ENS badge if enabled
+        if (agent.ens_payment_enabled) {
+          ctx.beginPath();
+          ctx.arc(x + 25, y - 25, 8, 0, Math.PI * 2);
+          ctx.fillStyle = agent.ens_verified ? '#22C55E' : '#EAB308';
+          ctx.fill();
+          ctx.fillStyle = 'white';
+          ctx.font = 'bold 8px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(agent.ens_verified ? '✓' : 'Ξ', x + 25, y - 25);
+        }
 
         // Draw agent name
         ctx.fillStyle = 'white';
         ctx.font = 'bold 14px sans-serif';
         ctx.textAlign = 'center';
         ctx.fillText(agent.agent_name, x, y + 50);
+
+        // Draw ENS domain if available
+        if (agent.ens_domain) {
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+          ctx.font = '10px monospace';
+          ctx.fillText(agent.ens_domain, x, y + 65);
+        }
       });
     };
 

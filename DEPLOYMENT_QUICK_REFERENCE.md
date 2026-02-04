@@ -3,6 +3,7 @@
 ## What Was Built ✅
 
 **ENS Payment Integration for CubePay**
+
 - Users pay via human-readable `.eth` domains
 - Example: `cube-pay.eth` instead of `0xD7CA...7B1e`
 - Full integration with payment modal UI
@@ -54,6 +55,7 @@
 ## 3-Step Deployment
 
 ### Step 1: Prepare (15 minutes)
+
 ```bash
 # Create production Supabase project
 # - Go to supabase.com/dashboard
@@ -63,6 +65,7 @@
 ```
 
 ### Step 2: Configure (10 minutes)
+
 ```bash
 # Add GitHub Secrets
 # https://github.com/YOUR_ORG/cube-pay-hacks/settings/secrets/actions
@@ -77,6 +80,7 @@ Secrets needed:
 ```
 
 ### Step 3: Deploy (5 minutes)
+
 ```bash
 # Push to main - CI/CD auto-deploys
 git push origin main
@@ -89,14 +93,14 @@ git push origin main
 
 ## Key Files to Review
 
-| File | Purpose | Priority |
-|------|---------|----------|
-| `DEPLOYMENT_GUIDE.md` | Full deployment steps | **CRITICAL** |
-| `.github/SECRETS_CONFIG.md` | Secret setup | **CRITICAL** |
-| `.env.production.example` | Environment template | **HIGH** |
-| `IMPLEMENTATION_COMPLETE.md` | Technical details | **HIGH** |
-| `PaymentModal.tsx` | UI implementation | **MEDIUM** |
-| `ensPaymentService.ts` | Payment logic | **MEDIUM** |
+| File                         | Purpose               | Priority     |
+| ---------------------------- | --------------------- | ------------ |
+| `DEPLOYMENT_GUIDE.md`        | Full deployment steps | **CRITICAL** |
+| `.github/SECRETS_CONFIG.md`  | Secret setup          | **CRITICAL** |
+| `.env.production.example`    | Environment template  | **HIGH**     |
+| `IMPLEMENTATION_COMPLETE.md` | Technical details     | **HIGH**     |
+| `PaymentModal.tsx`           | UI implementation     | **MEDIUM**   |
+| `ensPaymentService.ts`       | Payment logic         | **MEDIUM**   |
 
 ---
 
@@ -116,6 +120,7 @@ git push origin main
 ## Testing Checklist
 
 **Manual Test:**
+
 1. Visit production app
 2. Connect MetaMask (Sepolia testnet)
 3. Select "ENS Payment"
@@ -131,6 +136,7 @@ git push origin main
 ## Environment Variables
 
 ### Development (.env)
+
 ```env
 VITE_ENS_RESOLVER_NETWORK=sepolia
 VITE_ENS_DOMAIN=cube-pay.eth
@@ -138,6 +144,7 @@ VITE_ENS_RPC_ENDPOINT=https://sepolia.infura.io/v3/KEY
 ```
 
 ### Production (.env.production)
+
 ```env
 VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_ANON_KEY=your-key-here
@@ -170,20 +177,21 @@ Notify (Slack message)
 
 ## Support URLs
 
-| Resource | Link |
-|----------|------|
-| Deployment Guide | `DEPLOYMENT_GUIDE.md` |
-| Secrets Setup | `.github/SECRETS_CONFIG.md` |
-| Full Details | `IMPLEMENTATION_COMPLETE.md` |
-| ENS Documentation | https://docs.ens.domains |
-| Supabase Docs | https://supabase.com/docs |
-| Vercel Docs | https://vercel.com/docs |
+| Resource          | Link                         |
+| ----------------- | ---------------------------- |
+| Deployment Guide  | `DEPLOYMENT_GUIDE.md`        |
+| Secrets Setup     | `.github/SECRETS_CONFIG.md`  |
+| Full Details      | `IMPLEMENTATION_COMPLETE.md` |
+| ENS Documentation | https://docs.ens.domains     |
+| Supabase Docs     | https://supabase.com/docs    |
+| Vercel Docs       | https://vercel.com/docs      |
 
 ---
 
 ## Production Monitoring
 
 **What to Monitor:**
+
 - [ ] ENS resolution success rate (target >95%)
 - [ ] Payment completion rate (target >98%)
 - [ ] API response times (target <2s)
@@ -191,6 +199,7 @@ Notify (Slack message)
 - [ ] Error logs in Supabase
 
 **Alerts to Set:**
+
 - [ ] Error rate >5%
 - [ ] Response time >3s
 - [ ] Database connection fails
@@ -221,16 +230,19 @@ vercel rollback --token YOUR_TOKEN
 ## Next Steps (After Deployment)
 
 **Week 1:**
+
 - Monitor production for issues
 - Collect user feedback
 - Fix critical bugs
 
 **Month 1:**
+
 - Add more agents with ENS domains
 - Implement webhook confirmation
 - Add analytics
 
 **Q2 2026:**
+
 - Migrate from Sepolia to mainnet
 - Support Polygon, Arbitrum, Optimism
 
@@ -259,11 +271,11 @@ MetaMask:        https://metamask.io
 
 ## Key Contacts
 
-| Role | Contact |
-|------|---------|
-| DevOps Lead | [Your Team] |
-| Backend Team | [Your Team] |
-| Frontend Team | [Your Team] |
+| Role            | Contact     |
+| --------------- | ----------- |
+| DevOps Lead     | [Your Team] |
+| Backend Team    | [Your Team] |
+| Frontend Team   | [Your Team] |
 | Product Manager | [Your Team] |
 
 ---
@@ -271,6 +283,7 @@ MetaMask:        https://metamask.io
 ## Success Criteria
 
 **Deployment is successful when:**
+
 1. ✅ All 3 apps deployed to Vercel
 2. ✅ ENS resolution working (cube-pay.eth → address)
 3. ✅ Payment flow completes end-to-end
@@ -288,4 +301,4 @@ MetaMask:        https://metamask.io
 
 ---
 
-*For detailed instructions, see: `DEPLOYMENT_GUIDE.md`*
+_For detailed instructions, see: `DEPLOYMENT_GUIDE.md`_

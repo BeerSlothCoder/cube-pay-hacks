@@ -43,6 +43,8 @@ export interface AgentFilters {
   feeMax: number;
   cubeEnabled?: boolean;
   paymentEnabled?: boolean;
+  ensEnabled?: boolean;
+  ensVerifiedOnly?: boolean;
 }
 
 export const FilterPanel: React.FC<FilterPanelProps> = ({
@@ -59,6 +61,8 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
     feeMax: 100,
     cubeEnabled: true,
     paymentEnabled: true,
+    ensEnabled: false,
+    ensVerifiedOnly: false,
   });
 
   const [expandedSections, setExpandedSections] = useState({
@@ -66,6 +70,7 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
     blockchains: false,
     tokens: false,
     payment: false,
+    ens: false,
     distance: true,
     fees: false,
     advanced: false,
@@ -124,6 +129,8 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
       feeMax: 100,
       cubeEnabled: true,
       paymentEnabled: true,
+      ensEnabled: false,
+      ensVerifiedOnly: false,
     };
     setFilters(clearedFilters);
     if (onFilterChange) {
@@ -403,6 +410,38 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
                   />
                 </div>
               </div>
+            </div>
+          )}
+        </div>
+
+        {/* ENS Filters */}
+        <div>
+          {renderSectionHeader("ENS Payments", "ens")}
+          {expandedSections.ens && (
+            <div className="mt-2 space-y-3">
+              <label className="flex items-center justify-between p-2 rounded hover:bg-gray-800 cursor-pointer transition-colors">
+                <span className="text-sm text-gray-300">ENS Enabled</span>
+                <input
+                  type="checkbox"
+                  checked={filters.ensEnabled || false}
+                  onChange={(e) =>
+                    updateFilters({ ensEnabled: e.target.checked })
+                  }
+                  className="w-4 h-4 text-amber-500 rounded focus:ring-2 focus:ring-amber-500"
+                />
+              </label>
+              <label className="flex items-center justify-between p-2 rounded hover:bg-gray-800 cursor-pointer transition-colors">
+                <span className="text-sm text-gray-300">Verified Only</span>
+                <input
+                  type="checkbox"
+                  checked={filters.ensVerifiedOnly || false}
+                  onChange={(e) =>
+                    updateFilters({ ensVerifiedOnly: e.target.checked })
+                  }
+                  className="w-4 h-4 text-green-500 rounded focus:ring-2 focus:ring-green-500"
+                  disabled={!filters.ensEnabled}
+                />
+              </label>
             </div>
           )}
         </div>

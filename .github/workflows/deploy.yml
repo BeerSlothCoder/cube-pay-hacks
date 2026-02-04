@@ -15,7 +15,7 @@ jobs:
   validate:
     runs-on: ubuntu-latest
     name: Validate Code Quality
-    
+
     steps:
       - uses: actions/checkout@v4
         with:
@@ -23,8 +23,8 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '18'
-          cache: 'npm'
+          node-version: "18"
+          cache: "npm"
 
       - name: Install Dependencies
         run: npm ci
@@ -40,14 +40,14 @@ jobs:
     runs-on: ubuntu-latest
     name: Build Production
     needs: validate
-    
+
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '18'
-          cache: 'npm'
+          node-version: "18"
+          cache: "npm"
 
       - name: Install Dependencies
         run: npm ci
@@ -69,7 +69,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Verify Database Migrations
     needs: validate
-    
+
     steps:
       - uses: actions/checkout@v4
 
@@ -91,14 +91,14 @@ jobs:
     name: Deploy to Production
     needs: [build, db-migration]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    
+
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '18'
-          cache: 'npm'
+          node-version: "18"
+          cache: "npm"
 
       - name: Install Dependencies
         run: npm ci
@@ -139,13 +139,13 @@ jobs:
     name: Smoke Tests
     needs: deploy
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    
+
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: "18"
 
       - name: Wait for Deployment
         run: sleep 30
@@ -168,7 +168,7 @@ jobs:
     name: Send Notifications
     needs: [validate, build, deploy, smoke-tests]
     if: always()
-    
+
     steps:
       - name: Determine Status
         id: status
