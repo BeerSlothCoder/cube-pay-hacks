@@ -9,6 +9,11 @@ import {
   createMultiFaceMaterials,
   applyRotationAnimation,
 } from "@cubepay/payment-cube";
+import {
+  normalizeAgentType,
+  isVirtualTerminal,
+  getAgentTypeIcon,
+} from "../utils/agentTypeMapping";
 
 interface ARViewerProps {
   agents: DeployedObject[];
@@ -241,52 +246,60 @@ export const ARViewer: React.FC<ARViewerProps> = ({
   useMemo(() => {
     const processed = agents
       .map((agent, index) => {
+        // Backward compatibility: normalize agent_type
+        // Handles legacy "home_security" → "Virtual Terminal" conversion
+        // Also handles string "null" from database
+        const normalizedAgent = {
+          ...agent,
+          agent_type: normalizeAgentType(agent.agent_type || null) || agent.agent_type,
+        };
+
         let position: ScreenPositionCalculation;
 
-        if (agent.positioning_mode === "screen") {
+        if (normalizedAgent.positioning_mode === "screen") {
           // Screen positioning - convert screen percentages to 3D AR space
           if (
-            agent.screen_position_x !== undefined &&
-            agent.screen_position_y !== undefined
+            normalizedAgent.screen_position_x !== undefined &&
+            normalizedAgent.screen_position_y !== undefined
           ) {
             console.log(
-              `📍 Rendering screen-positioned agent: ${agent.agent_name} at (${agent.screen_position_x}%, ${agent.screen_position_y}%)`,
+              `📍 Rendering screen-positioned agent: ${normalizedAgent.agent_name} at (${normalizedAgent.screen_position_x}%, ${normalizedAgent.screen_position_y}%)`,
             );
             position = convertScreenPercentToAR(
-              agent.screen_position_x,
-              agent.screen_position_y,
+              normalizedAgent.screen_position_x,
+              normalizedAgent.screen_position_y,
               index,
             );
           } else {
             // Fallback if screen coordinates are missing
             console.warn(
-              `⚠️ Screen mode but missing coordinates for ${agent.agent_name}, using fallback position`,
+              `⚠️ Screen mode but missing coordinates for ${normalizedAgent.agent_name}, using fallback position`,
             );
             position = convertScreenPercentToAR(50, 50, index);
           }
         } else {
           // GPS positioning (default) - convert GPS coords to 3D space
-          if (agent.latitude !== undefined && agent.longitude !== undefined) {
+          if (normalizedAgent.latitude !== undefined && normalizedAgent.longitude !== undefined) {
             console.log(
-              `📍 Rendering GPS-positioned agent: ${agent.agent_name} at (${agent.latitude}, ${agent.longitude})`,
+              `📍 Rendering GPS-positioned agent: ${normalizedAgent.agent_name} at (${normalizedAgent.latitude}, ${normalizedAgent.longitude})`,
             );
             position = gpsTo3DPosition(
               userLatitude,
               userLongitude,
-              agent.latitude,
-              agent.longitude,
+              normalizedAgent.latitude,
+              normalizedAgent.longitude,
               10,
             );
           } else {
             // Fallback - place at center
             console.warn(
-              `⚠️ GPS mode but missing coordinates for ${agent.agent_name}, using center position`,
+              `⚠️ GPS mode but missing coordinates for ${normalizedAgent.agent_name}, using center position`,
             );
             position = { x: 0, y: 0, z: -10 };
           }
         }
 
-        return { ...agent, position, index };
+        return { ...normalizedAgent, position, index };
       })
       .slice(0, 20); // Limit to 20 agents for performance
 

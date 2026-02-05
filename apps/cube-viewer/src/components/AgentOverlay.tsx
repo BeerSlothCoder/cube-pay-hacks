@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import { useAgentStore } from "../stores/agentStore";
 import { usePaymentStore } from "../stores/paymentStore";
+import { normalizeAgentType, isVirtualTerminal } from "../utils/agentTypeMapping";
 
 type FilterType =
   | "all"
@@ -19,10 +20,14 @@ export const AgentOverlay: React.FC<AgentOverlayProps> = ({ filter }) => {
   const { selectAgent } = usePaymentStore();
 
   // Filter agents based on selected filter
+  // Normalizes agent types for backward compatibility
   const filteredAgents =
     filter === "all"
       ? agents
-      : agents.filter((agent) => (agent as any).agent_type === filter);
+      : agents.filter((agent) => {
+          const normalizedType = normalizeAgentType(agent.agent_type || null);
+          return normalizedType === filter;
+        });
 
   useEffect(() => {
     const canvas = canvasRef.current;

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Filter, X, ChevronDown, ChevronUp } from "lucide-react";
 import { EVM_NETWORKS } from "@cubepay/network-config";
 import type { AgentType } from "@cubepay/types";
+import { normalizeAgentType, getAgentTypeMetadata } from "../utils/agentTypeMapping";
 
 const AGENT_TYPES: { value: AgentType; label: string; emoji: string }[] = [
   { value: "Virtual Terminal", label: "Virtual ATM", emoji: "🏧" },
