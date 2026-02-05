@@ -31,6 +31,19 @@ export interface GeoLocation {
   heading?: number;
 }
 
+export interface ScreenPosition {
+  x: number; // 0-100 percentage from left edge
+  y: number; // 0-100 percentage from top edge
+}
+
+export type PositioningMode = "gps" | "screen";
+
+export interface PositioningConfiguration {
+  mode: PositioningMode;
+  gps_location?: GeoLocation;
+  screen_position?: ScreenPosition;
+}
+
 export interface Agent3DModel {
   url: string;
   format: "glb" | "gltf" | "fbx" | "obj";
@@ -73,15 +86,32 @@ export interface DeployedObject {
   // 3D Asset
   model_3d?: Agent3DModel;
 
-  // Location & Positioning
-  location: GeoLocation;
-  radius_meters?: number;
-  placement_type?: "ground" | "floating" | "wall" | "table" | "custom";
+  // Location & Positioning (Dual Mode Support)
+  location?: GeoLocation; // GPS location (deprecated in favor of positioning_config)
+  latitude?: number; // GPS latitude
+  longitude?: number; // GPS longitude
+  altitude?: number; // GPS altitude
+  preciselatitude?: number; // RTK-enhanced latitude
+  preciselongitude?: number; // RTK-enhanced longitude
+  precisealtitude?: number; // RTK-enhanced altitude
+  
+  // Dual positioning system configuration
+  positioning_mode?: PositioningMode; // 'gps' or 'screen' (defaults to 'gps')
+  positioning_config?: PositioningConfiguration; // Unified positioning config
+  
+  // Screen positioning (for on-screen overlay)
+  screen_position_x?: number; // 0-100 percentage from left
+  screen_position_y?: number; // 0-100 percentage from top
+  
+  // Legacy field (kept for backward compatibility)
   screen_position?: {
     x: number; // 0-100 percentage
     y: number; // 0-100 percentage
     z_index: number; // Layer order
   };
+
+  radius_meters?: number;
+  placement_type?: "ground" | "floating" | "wall" | "table" | "custom";
 
   // Deployment Control
   status: DeploymentStatus;
