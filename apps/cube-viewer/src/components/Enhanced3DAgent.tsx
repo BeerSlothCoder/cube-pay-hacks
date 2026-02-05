@@ -93,11 +93,7 @@ export const Enhanced3DAgent: React.FC<Enhanced3DAgentProps> = ({
   return (
     <group position={[agent.position.x, agent.position.y, agent.position.z]}>
       {/* Glow effect around cube (inner) */}
-      <mesh
-        ref={glowMeshRef}
-        geometry={geometry}
-        scale={0.52}
-      >
+      <mesh ref={glowMeshRef} geometry={geometry} scale={0.52}>
         <meshBasicMaterial
           color={glowColor}
           transparent
@@ -107,7 +103,12 @@ export const Enhanced3DAgent: React.FC<Enhanced3DAgentProps> = ({
       </mesh>
 
       {/* Main Payment Cube */}
-      <mesh ref={meshRef} geometry={geometry} material={materials} scale={0.5} />
+      <mesh
+        ref={meshRef}
+        geometry={geometry}
+        material={materials}
+        scale={0.5}
+      />
 
       {/* Agent Name Label */}
       <Text

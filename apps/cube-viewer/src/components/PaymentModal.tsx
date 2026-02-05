@@ -32,6 +32,10 @@ import {
 import { ensPaymentService } from "../services/ensPaymentService";
 import { ENSPaymentDisplay } from "./ENSPaymentDisplay";
 import type { ENSPaymentConfig } from "../services/ensPaymentService";
+import { isVirtualTerminal } from "../utils/agentTypeMapping";
+import ARTMDisplayModal from "./ARTMDisplayModal";
+import CardWithdrawalModal from "./CardWithdrawalModal";
+import CryptoWithdrawalModal from "./CryptoWithdrawalModal";
 
 export const PaymentModal: React.FC = () => {
   const { selectedPaymentFace, selectedAgent, closePaymentModal } =
@@ -60,6 +64,11 @@ export const PaymentModal: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [recipientInput, setRecipientInput] = useState<string>("");
   const [isResolvingENS, setIsResolvingENS] = useState(false);
+
+  // ARTM Modal State
+  const [artmStep, setArtmStep] = useState<"display" | "card" | "crypto">(
+    "display",
+  );
 
   // ENS Payment State
   const [ensPaymentConfig, setENSPaymentConfig] =
@@ -305,6 +314,41 @@ export const PaymentModal: React.FC = () => {
 
   if (!selectedPaymentFace || !selectedAgent) return null;
 
+  // ARTM Detection & Routing
+  if (isVirtualTerminal(selectedAgent.agent_type)) {
+    console.log("🏧 ARTM agent detected - showing ARTMDisplayModal");
+
+    if (artmStep === "display") {
+      return (
+        <ARTMDisplayModal
+          agent={selectedAgent}
+          onCardClick={() => setArtmStep("card")}
+          onWalletClick={() => setArtmStep("crypto")}
+          onClose={closePaymentModal}
+        />
+      );
+    }
+
+    if (artmStep === "card") {
+      return (
+        <CardWithdrawalModal
+          agent={selectedAgent}
+          onClose={closePaymentModal}
+        />
+      );
+    }
+
+    if (artmStep === "crypto") {
+      return (
+        <CryptoWithdrawalModal
+          agent={selectedAgent}
+          onClose={closePaymentModal}
+        />
+      );
+    }
+  }
+
+  // Standard Payment Modal for non-ARTM agents
   const faceConfigs = {
     crypto_qr: {
       title: "Crypto QR Payment",

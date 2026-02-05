@@ -42,7 +42,9 @@ export const AGENT_TYPE_META = {
  * @param agentType - Raw agent type value from database
  * @returns Normalized agent type or null if invalid
  */
-export const normalizeAgentType = (agentType: string | null): AgentType | null => {
+export const normalizeAgentType = (
+  agentType: string | null,
+): AgentType | null => {
   if (!agentType || typeof agentType !== "string") {
     return null;
   }
@@ -81,7 +83,9 @@ export const normalizeAgentType = (agentType: string | null): AgentType | null =
  * @param agentType - Agent type value
  * @returns true if agent is Virtual Terminal type
  */
-export const isVirtualTerminal = (agentType: string | null | undefined): boolean => {
+export const isVirtualTerminal = (
+  agentType: string | null | undefined,
+): boolean => {
   if (!agentType || typeof agentType !== "string") {
     return false;
   }
@@ -96,7 +100,9 @@ export const isVirtualTerminal = (agentType: string | null | undefined): boolean
  * @param agentType - Agent type value
  * @returns true if agent is Payment Terminal type
  */
-export const isPaymentTerminal = (agentType: string | null | undefined): boolean => {
+export const isPaymentTerminal = (
+  agentType: string | null | undefined,
+): boolean => {
   if (!agentType || typeof agentType !== "string") {
     return false;
   }
@@ -111,7 +117,9 @@ export const isPaymentTerminal = (agentType: string | null | undefined): boolean
  * @param agentType - Agent type value
  * @returns true if agent is Content Creator type
  */
-export const isContentCreator = (agentType: string | null | undefined): boolean => {
+export const isContentCreator = (
+  agentType: string | null | undefined,
+): boolean => {
   if (!agentType || typeof agentType !== "string") {
     return false;
   }
@@ -143,7 +151,9 @@ export const getAgentTypeMetadata = (
  * @param agentType - Agent type value
  * @returns Icon emoji string or default
  */
-export const getAgentTypeIcon = (agentType: string | null | undefined): string => {
+export const getAgentTypeIcon = (
+  agentType: string | null | undefined,
+): string => {
   const metadata = getAgentTypeMetadata(agentType);
   return metadata?.icon || "🤖";
 };
@@ -154,7 +164,9 @@ export const getAgentTypeIcon = (agentType: string | null | undefined): string =
  * @param agentType - Agent type value
  * @returns Hex color code
  */
-export const getAgentTypeBadgeColor = (agentType: string | null | undefined): string => {
+export const getAgentTypeBadgeColor = (
+  agentType: string | null | undefined,
+): string => {
   const metadata = getAgentTypeMetadata(agentType);
   return metadata?.badgeColor || "#6b7280"; // gray-500
 };
@@ -165,7 +177,9 @@ export const getAgentTypeBadgeColor = (agentType: string | null | undefined): st
  * @param agentType - Agent type value
  * @returns Badge text or empty string
  */
-export const getAgentTypeBadge = (agentType: string | null | undefined): string => {
+export const getAgentTypeBadge = (
+  agentType: string | null | undefined,
+): string => {
   const metadata = getAgentTypeMetadata(agentType);
   return metadata?.badge || "";
 };

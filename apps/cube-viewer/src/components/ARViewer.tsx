@@ -251,7 +251,8 @@ export const ARViewer: React.FC<ARViewerProps> = ({
         // Also handles string "null" from database
         const normalizedAgent = {
           ...agent,
-          agent_type: normalizeAgentType(agent.agent_type || null) || agent.agent_type,
+          agent_type:
+            normalizeAgentType(agent.agent_type || null) || agent.agent_type,
         };
 
         let position: ScreenPositionCalculation;
@@ -279,7 +280,10 @@ export const ARViewer: React.FC<ARViewerProps> = ({
           }
         } else {
           // GPS positioning (default) - convert GPS coords to 3D space
-          if (normalizedAgent.latitude !== undefined && normalizedAgent.longitude !== undefined) {
+          if (
+            normalizedAgent.latitude !== undefined &&
+            normalizedAgent.longitude !== undefined
+          ) {
             console.log(
               `📍 Rendering GPS-positioned agent: ${normalizedAgent.agent_name} at (${normalizedAgent.latitude}, ${normalizedAgent.longitude})`,
             );

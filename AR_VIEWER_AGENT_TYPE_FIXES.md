@@ -1,22 +1,26 @@
 # AR Viewer Agent Type Fixes - Implementation Summary
 
 ## Overview
+
 Comprehensive backward compatibility and normalization system for AR Viewer agent types. Ensures smooth transition from legacy "home_security" type to new "Virtual Terminal" type, with proper handling of database anomalies.
 
 ## Problem Statement
 
 ### Legacy Type References
+
 - Old database records used `home_security` as agent_type
 - Database migration changed this to `Virtual Terminal` (capitalized)
 - Frontend code still referenced legacy values
 - New deployments used correct capitalized values
 
 ### Database Anomalies
+
 - Some records had string `"null"` instead of actual NULL
 - Inconsistent capitalization across different components
 - Legacy lowercase types (`payment_terminal`, `content_creator`) needed normalization
 
 ### Impact
+
 - Virtual Terminal (ARTM) agents not filtering correctly
 - Mixed type comparisons failed
 - Legacy agents couldn't be displayed properly
@@ -26,6 +30,7 @@ Comprehensive backward compatibility and normalization system for AR Viewer agen
 ### 1. Centralized Type Mapping (`utils/agentTypeMapping.ts`)
 
 **Features:**
+
 - Single source of truth for agent type metadata
 - Backward compatibility layer for legacy values
 - Helper functions for all type operations
@@ -65,21 +70,23 @@ filterByAgentType<T>(agents: T[], filter: AgentType | null): T[]
 
 **Type Metadata Dictionary:**
 
-| Type | Label | Emoji | Badge | Color | Keywords |
-|------|-------|-------|-------|-------|----------|
-| Virtual Terminal | Virtual ATM | 🏧 | ARTM | #0066ff (blue) | atm, terminal, crypto, cash |
-| Payment Terminal | Payment Terminal - POS | 💳 | POS | #8b5cf6 (purple) | payment, pos, terminal |
-| Content Creator | My Payment Terminal | 💰 | CREATOR | #f59e0b (amber) | creator, personal, merchant |
+| Type             | Label                  | Emoji | Badge   | Color            | Keywords                    |
+| ---------------- | ---------------------- | ----- | ------- | ---------------- | --------------------------- |
+| Virtual Terminal | Virtual ATM            | 🏧    | ARTM    | #0066ff (blue)   | atm, terminal, crypto, cash |
+| Payment Terminal | Payment Terminal - POS | 💳    | POS     | #8b5cf6 (purple) | payment, pos, terminal      |
+| Content Creator  | My Payment Terminal    | 💰    | CREATOR | #f59e0b (amber)  | creator, personal, merchant |
 
 ### 2. ARViewer Component Updates
 
 **What Changed:**
+
 - Added import of type normalization utilities
 - Process agents with type normalization during rendering
 - Automatically converts legacy types before display
 - Normalizes `"null"` string to proper null value
 
 **Implementation:**
+
 ```typescript
 // Before processing agents for 3D rendering
 const normalizedAgent = {
@@ -91,6 +98,7 @@ const normalizedAgent = {
 ```
 
 **Impact:**
+
 - Legacy agents display with correct type
 - No manual intervention needed
 - Database inconsistencies handled transparently
@@ -98,11 +106,13 @@ const normalizedAgent = {
 ### 3. AgentOverlay Component Updates
 
 **What Changed:**
+
 - Updated filter logic to use normalization
 - Type comparisons now work with legacy values
 - Ensures correct agent filtering
 
 **Implementation:**
+
 ```typescript
 const filteredAgents =
   filter === "all"
@@ -114,6 +124,7 @@ const filteredAgents =
 ```
 
 **Impact:**
+
 - Virtual Terminal filter correctly shows ARTM agents
 - Legacy home_security agents automatically included
 - Canvas overlay renders correct agent count
@@ -121,6 +132,7 @@ const filteredAgents =
 ### 4. Enhanced3DAgent Component
 
 **Features:**
+
 - Proper 3D model detection logic
 - Agent type-specific visual styling
 - Glow color based on agent type:
@@ -130,6 +142,7 @@ const filteredAgents =
 - 3D model availability indicator
 
 **Rendering:**
+
 ```typescript
 const isVirtual = isVirtualTerminal(agent.agent_type);
 const glowColor = isVirtual ? 0x0066ff : 0xdc143c;
@@ -148,6 +161,7 @@ const glowColor = isVirtual ? 0x0066ff : 0xdc143c;
 ```
 
 **Visual Indicators:**
+
 - Blue glow pulse for Virtual Terminal agents
 - Red glow pulse for other agents
 - Type badge below agent name
@@ -157,11 +171,13 @@ const glowColor = isVirtual ? 0x0066ff : 0xdc143c;
 ### 5. FilterPanel Updates
 
 **What Changed:**
+
 - Already using correct capitalized agent types
 - Added import of type utilities for consistency
 - Ready for future validation enhancements
 
 **Current Types:**
+
 - "Virtual Terminal" (ARTM)
 - "Payment Terminal" (POS)
 - "Content Creator" (Personal)
@@ -185,29 +201,32 @@ agent_type: 'content_creator'       -- Auto-converts to 'Content Creator'
 ## Testing Scenarios
 
 ### Scenario 1: Legacy Home_Security Agent
+
 ```javascript
 // Database: { agent_type: "home_security" }
 // ARViewer processes:
-normalizeAgentType("home_security") // → "Virtual Terminal"
-isVirtualTerminal("home_security")  // → true
-getAgentTypeIcon("home_security")   // → "🏧"
-getAgentTypeBadgeColor("home_security") // → "#0066ff"
+normalizeAgentType("home_security"); // → "Virtual Terminal"
+isVirtualTerminal("home_security"); // → true
+getAgentTypeIcon("home_security"); // → "🏧"
+getAgentTypeBadgeColor("home_security"); // → "#0066ff"
 
 // Result: Displays as ARTM with blue glow ✅
 ```
 
 ### Scenario 2: String Null from Database
+
 ```javascript
 // Database: { agent_type: "null" }
 // ARViewer processes:
-normalizeAgentType("null") // → null
-isVirtualTerminal("null")  // → false
-getAgentTypeIcon("null")   // → "🤖" (default)
+normalizeAgentType("null"); // → null
+isVirtualTerminal("null"); // → false
+getAgentTypeIcon("null"); // → "🤖" (default)
 
 // Result: Displays with generic styling ✅
 ```
 
 ### Scenario 3: Virtual Terminal Filter
+
 ```javascript
 // FilterPanel selection: "Virtual Terminal"
 // Agents with legacy "home_security":
@@ -219,11 +238,12 @@ const normalizedType = normalizeAgentType("home_security");
 ```
 
 ### Scenario 4: New Virtual Terminal Agent
+
 ```javascript
 // Database: { agent_type: "Virtual Terminal" }
 // ARViewer processes:
-normalizeAgentType("Virtual Terminal") // → "Virtual Terminal" (passthrough)
-isVirtualTerminal("Virtual Terminal")  // → true
+normalizeAgentType("Virtual Terminal"); // → "Virtual Terminal" (passthrough)
+isVirtualTerminal("Virtual Terminal"); // → true
 
 // Result: Displays with correct blue styling ✅
 ```
@@ -231,6 +251,7 @@ isVirtualTerminal("Virtual Terminal")  // → true
 ## File Changes
 
 ### New Files Created
+
 1. **`src/utils/agentTypeMapping.ts`** (155 lines)
    - Centralized type mapping and conversion utilities
    - All helper functions and metadata
@@ -245,6 +266,7 @@ isVirtualTerminal("Virtual Terminal")  // → true
    - Complete implementation documentation
 
 ### Files Updated
+
 1. **`src/components/ARViewer.tsx`**
    - Added imports for type utilities
    - Added normalization in agent processing loop
@@ -262,16 +284,16 @@ isVirtualTerminal("Virtual Terminal")  // → true
 
 ## Backward Compatibility Matrix
 
-| Input | Output | Display | Glow | Badge |
-|-------|--------|---------|------|-------|
-| `"home_security"` | `"Virtual Terminal"` | 🏧 Virtual ATM | Blue | ARTM |
-| `"payment_terminal"` | `"Payment Terminal"` | 💳 POS | Red | POS |
-| `"content_creator"` | `"Content Creator"` | 💰 Creator | Red | CREATOR |
-| `"Virtual Terminal"` | `"Virtual Terminal"` | 🏧 Virtual ATM | Blue | ARTM |
-| `"Payment Terminal"` | `"Payment Terminal"` | 💳 POS | Red | POS |
-| `"null"` (string) | `null` | 🤖 Agent | Red | - |
-| `null` | `null` | 🤖 Agent | Red | - |
-| `undefined` | `null` | 🤖 Agent | Red | - |
+| Input                | Output               | Display        | Glow | Badge   |
+| -------------------- | -------------------- | -------------- | ---- | ------- |
+| `"home_security"`    | `"Virtual Terminal"` | 🏧 Virtual ATM | Blue | ARTM    |
+| `"payment_terminal"` | `"Payment Terminal"` | 💳 POS         | Red  | POS     |
+| `"content_creator"`  | `"Content Creator"`  | 💰 Creator     | Red  | CREATOR |
+| `"Virtual Terminal"` | `"Virtual Terminal"` | 🏧 Virtual ATM | Blue | ARTM    |
+| `"Payment Terminal"` | `"Payment Terminal"` | 💳 POS         | Red  | POS     |
+| `"null"` (string)    | `null`               | 🤖 Agent       | Red  | -       |
+| `null`               | `null`               | 🤖 Agent       | Red  | -       |
+| `undefined`          | `null`               | 🤖 Agent       | Red  | -       |
 
 ## Key Benefits
 
@@ -303,16 +325,19 @@ isVirtualTerminal("Virtual Terminal")  // → true
 ## Future Enhancements
 
 ### Phase 2: Advanced Filtering
+
 - Add type-based filtering in FilterPanel
 - Support multi-type selection
 - Save filter preferences
 
 ### Phase 3: Type-Specific Rendering
+
 - Custom 3D models per type
 - Type-specific interaction modes
 - Enhanced visual indicators
 
 ### Phase 4: Analytics
+
 - Track agent type distribution
 - Monitor legacy type usage
 - Plan type deprecation timeline

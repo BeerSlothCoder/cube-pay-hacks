@@ -1,7 +1,10 @@
 import React, { useEffect, useRef } from "react";
 import { useAgentStore } from "../stores/agentStore";
 import { usePaymentStore } from "../stores/paymentStore";
-import { normalizeAgentType, isVirtualTerminal } from "../utils/agentTypeMapping";
+import {
+  normalizeAgentType,
+  isVirtualTerminal,
+} from "../utils/agentTypeMapping";
 
 type FilterType =
   | "all"
