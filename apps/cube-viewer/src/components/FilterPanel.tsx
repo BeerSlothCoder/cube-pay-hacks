@@ -4,9 +4,9 @@ import { EVM_NETWORKS } from "@cubepay/network-config";
 import type { AgentType } from "@cubepay/types";
 
 const AGENT_TYPES: { value: AgentType; label: string; emoji: string }[] = [
-  { value: "home_security", label: "Virtual ATM", emoji: "🏧" },
-  { value: "payment_terminal", label: "Payment Terminal - POS", emoji: "💳" },
-  { value: "content_creator", label: "My Payment Terminal", emoji: "💰" },
+  { value: "Virtual Terminal", label: "Virtual ATM", emoji: "🏧" },
+  { value: "Payment Terminal", label: "Payment Terminal - POS", emoji: "💳" },
+  { value: "Content Creator", label: "My Payment Terminal", emoji: "💰" },
 ];
 
 const PAYMENT_METHODS = [

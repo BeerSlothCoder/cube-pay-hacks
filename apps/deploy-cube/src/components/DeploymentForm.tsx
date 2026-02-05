@@ -22,17 +22,17 @@ import { WalletConnector } from "./WalletConnector";
 const AGENT_TYPES: { value: AgentType; label: string; description: string }[] =
   [
     {
-      value: "home_security",
+      value: "Virtual Terminal",
       label: "Virtual ATM",
       description: "Cryptocurrency ATM service for crypto-to-fiat conversion",
     },
     {
-      value: "payment_terminal",
+      value: "Payment Terminal",
       label: "Payment Terminal - POS",
       description: "Point-of-sale payment processing terminal",
     },
     {
-      value: "content_creator",
+      value: "Content Creator",
       label: "My Payment Terminal",
       description: "Personal payment terminal for creators and merchants",
     },
@@ -106,7 +106,7 @@ export const DeploymentForm: React.FC<DeploymentFormProps> = ({
 }) => {
   const [formData, setFormData] = useState<DeploymentFormData>({
     agent_name: "",
-    agent_type: "home_security",
+    agent_type: "Virtual Terminal",
     agent_description: "",
     avatar_url: "",
     latitude: 40.7128,
