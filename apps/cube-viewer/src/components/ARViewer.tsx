@@ -26,10 +26,10 @@ interface ScreenPositionCalculation {
 
 /**
  * Convert screen percentage coordinates (0-100%) to 3D AR space coordinates
- * 
+ *
  * This function handles the transformation from 2D screen space (percentages)
  * to 3D world space that can be rendered by Three.js
- * 
+ *
  * @param screenX - Horizontal position as percentage (0-100, 0=left, 100=right)
  * @param screenY - Vertical position as percentage (0-100, 0=top, 100=bottom)
  * @param index - Agent index for slight offset to prevent exact overlap
@@ -88,10 +88,12 @@ const gpsTo3DPosition = (
 ) => {
   // Calculate distance in degrees (approximate)
   const deltaLat = targetLat - userLat;
-  const deltaLon = (targetLon - userLon) * Math.cos((targetLat * Math.PI) / 180);
+  const deltaLon =
+    (targetLon - userLon) * Math.cos((targetLat * Math.PI) / 180);
 
   // Convert to rough meters (1 degree ≈ 111km at equator)
-  const distance = Math.sqrt(deltaLat * deltaLat + deltaLon * deltaLon) * 111000;
+  const distance =
+    Math.sqrt(deltaLat * deltaLat + deltaLon * deltaLon) * 111000;
 
   // Calculate bearing
   const bearing =
@@ -166,7 +168,8 @@ const AgentMarker: React.FC<AgentMarkerProps> = ({
 
   const positioningModeBadge =
     agent.positioning_mode === "screen" ? "SCREEN" : "GPS";
-  const badgeColor = agent.positioning_mode === "screen" ? "#3b82f6" : "#10b981";
+  const badgeColor =
+    agent.positioning_mode === "screen" ? "#3b82f6" : "#10b981";
 
   return (
     <group position={[position.x, position.y, position.z]}>
@@ -263,10 +266,7 @@ export const ARViewer: React.FC<ARViewerProps> = ({
           }
         } else {
           // GPS positioning (default) - convert GPS coords to 3D space
-          if (
-            agent.latitude !== undefined &&
-            agent.longitude !== undefined
-          ) {
+          if (agent.latitude !== undefined && agent.longitude !== undefined) {
             console.log(
               `📍 Rendering GPS-positioned agent: ${agent.agent_name} at (${agent.latitude}, ${agent.longitude})`,
             );
@@ -367,19 +367,24 @@ export const ARViewer: React.FC<ARViewerProps> = ({
       <div className="absolute bottom-4 left-4 bg-black bg-opacity-75 px-4 py-3 rounded-lg pointer-events-none space-y-1">
         <p className="text-white text-sm font-semibold">Agent Statistics</p>
         <p className="text-blue-400 text-xs">
-          🖥️ Screen: {screenPositionedCount} agent{screenPositionedCount !== 1 ? "s" : ""}
+          🖥️ Screen: {screenPositionedCount} agent
+          {screenPositionedCount !== 1 ? "s" : ""}
         </p>
         <p className="text-green-400 text-xs">
-          📍 GPS: {gpsPositionedCount} agent{gpsPositionedCount !== 1 ? "s" : ""}
+          📍 GPS: {gpsPositionedCount} agent
+          {gpsPositionedCount !== 1 ? "s" : ""}
         </p>
         <p className="text-gray-400 text-xs">
-          Total: {displayAgents.length} agent{displayAgents.length !== 1 ? "s" : ""}
+          Total: {displayAgents.length} agent
+          {displayAgents.length !== 1 ? "s" : ""}
         </p>
       </div>
 
       {/* Viewport info (useful for debugging) */}
       <div className="absolute top-4 right-4 bg-black bg-opacity-50 px-3 py-2 rounded text-xs text-gray-400 pointer-events-none">
-        <p>{viewportSize.width}x{viewportSize.height}</p>
+        <p>
+          {viewportSize.width}x{viewportSize.height}
+        </p>
       </div>
     </div>
   );

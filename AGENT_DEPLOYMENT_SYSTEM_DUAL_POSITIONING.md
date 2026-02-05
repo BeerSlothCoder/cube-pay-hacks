@@ -60,6 +60,7 @@ Both modes work simultaneously in the same AR scene, providing maximum flexibili
 ## 📊 Database Schema Changes
 
 ### Migration File
+
 **Location:** `/database/migrations/002_add_screen_positioning.sql`
 
 #### New Columns Added to `deployed_objects`
@@ -132,6 +133,7 @@ interface PositioningConfiguration {
 #### Updated `DeployedObject` Interface
 
 Added positioning-related fields:
+
 - `positioning_mode?: PositioningMode` - Which system to use
 - `positioning_config?: PositioningConfiguration` - Unified config
 - `screen_position_x?: number` - Horizontal percentage
@@ -145,19 +147,22 @@ Added positioning-related fields:
 ## 🎨 Component Implementation
 
 ### ARViewer Component
+
 **File:** `apps/cube-viewer/src/components/ARViewer.tsx`
 
 #### Key Features
 
 1. **Dual Position Calculation**
+
    ```typescript
-   const position = 
-     agent.positioning_mode === 'screen'
+   const position =
+     agent.positioning_mode === "screen"
        ? convertScreenPercentToAR(screenX, screenY, index)
-       : gpsTo3DPosition(userLat, userLon, agentLat, agentLon, scale)
+       : gpsTo3DPosition(userLat, userLon, agentLat, agentLon, scale);
    ```
 
 2. **Screen-to-3D Conversion Function**
+
    ```typescript
    convertScreenPercentToAR(screenX: number, screenY: number, index: number)
      ├─ Convert percentages to pixels
@@ -187,19 +192,21 @@ Added positioning-related fields:
 ## 🎣 Hook Implementation
 
 ### useAgentsWithDualPositioning
+
 **File:** `apps/cube-viewer/src/hooks/useAgentsWithDualPositioning.ts`
 
 #### Features
 
 1. **Dual Stream Separation**
+
    ```typescript
    {
-     agents,      // All agents (combined)
-     gpsAgents,   // GPS-positioned only
-     screenAgents, // Screen-positioned only
-     loading,
-     error,
-     refresh
+     (agents, // All agents (combined)
+       gpsAgents, // GPS-positioned only
+       screenAgents, // Screen-positioned only
+       loading,
+       error,
+       refresh);
    }
    ```
 
@@ -230,12 +237,14 @@ Added positioning-related fields:
 ## 📐 Coordinate System Explanation
 
 ### Screen Percentage System
+
 - **Range:** 0-100% for both X and Y
 - **Origin:** Top-left corner (0%, 0%)
 - **X-axis:** 0% = left edge, 100% = right edge
 - **Y-axis:** 0% = top edge, 100% = bottom edge
 
 **Example Positions:**
+
 ```typescript
 const SCREEN_POSITIONS = {
   TOP_LEFT: { x: 10, y: 10 },
@@ -253,18 +262,21 @@ const SCREEN_POSITIONS = {
 ### Conversion Formula
 
 **Screen Percentage → Pixels**
+
 ```
 pixelX = (screenX / 100) × viewportWidth
 pixelY = (screenY / 100) × viewportHeight
 ```
 
 **Pixels → Normalized Device Coordinates**
+
 ```
 ndcX = (pixelX / viewportWidth) × 2 - 1
 ndcY = -(pixelY / viewportHeight) × 2 + 1
 ```
 
 **NDC → 3D AR Space**
+
 ```
 const distance = 10 // Camera distance
 const vFOV = 45° // Vertical FOV
@@ -283,8 +295,8 @@ z = -distance
 ### Basic Setup
 
 ```tsx
-import { useAgentsWithDualPositioning } from './hooks/useAgentsWithDualPositioning';
-import { ARViewer } from './components/ARViewer';
+import { useAgentsWithDualPositioning } from "./hooks/useAgentsWithDualPositioning";
+import { ARViewer } from "./components/ARViewer";
 
 function MyViewer() {
   const { agents, loading, error } = useAgentsWithDualPositioning({
@@ -295,8 +307,8 @@ function MyViewer() {
   });
 
   const handleAgentSelect = (agent) => {
-    console.log('Selected agent:', agent);
-    console.log('Positioning mode:', agent.positioning_mode);
+    console.log("Selected agent:", agent);
+    console.log("Positioning mode:", agent.positioning_mode);
   };
 
   return (
@@ -318,10 +330,10 @@ const agent = {
   agent_name: "UI Assistant",
   agent_type: "helper_bot",
   positioning_mode: "screen",
-  screen_position_x: 85.0,  // Top-right area
+  screen_position_x: 85.0, // Top-right area
   screen_position_y: 15.0,
-  latitude: 0,              // Required but not used
-  longitude: 0,             // Required but not used
+  latitude: 0, // Required but not used
+  longitude: 0, // Required but not used
   is_active: true,
 };
 
@@ -334,7 +346,7 @@ const agent = {
 const agent = {
   agent_name: "Store Clerk",
   agent_type: "pos_terminal",
-  positioning_mode: "gps",  // Or omit (defaults to 'gps')
+  positioning_mode: "gps", // Or omit (defaults to 'gps')
   latitude: 34.0522,
   longitude: -118.2437,
   altitude: 0,
@@ -349,17 +361,20 @@ const agent = {
 ## ✅ Testing Checklist
 
 ### Basic Functionality
+
 - [ ] Load agents with `positioning_mode='screen'` ✓
 - [ ] Verify screen percentages render at correct viewport positions ✓
 - [ ] Confirm GPS agents still work correctly ✓
 - [ ] Test mixed GPS + screen agent scenes simultaneously ✓
 
 ### Screen Position Accuracy
+
 - [ ] Test corner positions (0%,0%), (100%,100%), (0%,100%), (100%,0%) ✓
 - [ ] Test center position (50%, 50%) ✓
 - [ ] Test edge positions (0%, 50%), (50%, 0%), (100%, 50%), (50%, 100%) ✓
 
 ### Responsive Behavior
+
 - [ ] Test on phone screen (360x640, 375x667, 414x896) ✓
 - [ ] Test on tablet screen (768x1024, 820x1180) ✓
 - [ ] Test on desktop screen (1920x1080, 2560x1440) ✓
@@ -367,11 +382,13 @@ const agent = {
 - [ ] Resize browser window and verify re-positioning ✓
 
 ### Visual Indicators
+
 - [ ] Blue badge appears on screen-positioned agents ✓
 - [ ] Green badge appears on GPS-positioned agents ✓
 - [ ] Badges are readable and positioned correctly ✓
 
 ### Edge Cases
+
 - [ ] Agent with `positioning_mode=null` defaults to GPS ✓
 - [ ] Agent with `screen_position_x=null` but `mode='screen'` falls back ✓
 - [ ] Multiple agents at same screen position (slight offset applied) ✓
@@ -416,6 +433,7 @@ const agent = {
 ## 🎯 Performance Considerations
 
 ### Screen-Positioned Agents Are More Performant
+
 - ✅ No GPS distance calculations needed
 - ✅ No bearing computations required
 - ✅ Simpler coordinate transformation
@@ -423,6 +441,7 @@ const agent = {
 - ✅ Better for UI overlays and streaming use cases
 
 ### Optimization Tips
+
 - Cache viewport dimensions (only update on resize)
 - Batch position updates on resize events
 - Use memoization for coordinate conversion
@@ -434,9 +453,11 @@ const agent = {
 ## 📝 Migration Guide
 
 ### For Existing GPS Agents
+
 **No action required** - They automatically default to GPS mode.
 
 ### Converting GPS Agent to Screen Positioning
+
 ```sql
 UPDATE deployed_objects
 SET
@@ -447,6 +468,7 @@ WHERE id = 'your-agent-id';
 ```
 
 ### Reverting to GPS Mode
+
 ```sql
 UPDATE deployed_objects
 SET
@@ -463,6 +485,7 @@ WHERE id = 'your-agent-id';
 ### Issue: Screen-positioned agents not appearing
 
 **Checks:**
+
 1. ✓ Database has `screen_position_x` and `screen_position_y` columns (migration applied)
 2. ✓ Query includes new columns in SELECT statement
 3. ✓ `positioning_mode` is set to `'screen'` not `'gps'`
@@ -471,6 +494,7 @@ WHERE id = 'your-agent-id';
 ### Issue: Agents positioned incorrectly
 
 **Debug:**
+
 ```typescript
 console.log("Agent data:", {
   name: agent.agent_name,
@@ -485,6 +509,7 @@ console.log("Agent data:", {
 ### Issue: Agents don't update on resize
 
 **Verify:**
+
 - ✓ Resize event listener is attached to window
 - ✓ State update triggers re-render of agents
 - ✓ No caching preventing recalculation
@@ -495,6 +520,7 @@ console.log("Agent data:", {
 ## 📚 File Inventory
 
 ### New Files Created
+
 1. **Database Migration**
    - `database/migrations/002_add_screen_positioning.sql` (150 lines)
 
@@ -508,6 +534,7 @@ console.log("Agent data:", {
    - `AGENT_DEPLOYMENT_SYSTEM_DUAL_POSITIONING.md` (this file)
 
 ### Modified Files
+
 1. **Type Definitions**
    - `packages/types/src/agent.ts` (added PositioningMode, ScreenPosition types)
 
@@ -516,16 +543,19 @@ console.log("Agent data:", {
 ## 🔐 Security Considerations
 
 ### Row-Level Security (RLS)
+
 - Already configured in base schema
 - Policies allow public read/write (adjust for production)
 - Consider restricting screen positioning to authenticated users
 
 ### Input Validation
+
 - Database constraints validate screen coordinates (0-100%)
 - TypeScript types ensure type safety
 - Screen position values clamped to valid range
 
 ### Performance Security
+
 - Limit agents per query (20 agent max in single scene)
 - Pagination for large datasets
 - Proper indexing prevents full table scans
@@ -535,6 +565,7 @@ console.log("Agent data:", {
 ## 🚀 Deployment Instructions
 
 ### Step 1: Apply Database Migration
+
 ```bash
 # In Supabase SQL Editor, run:
 \i /database/migrations/002_add_screen_positioning.sql
@@ -543,6 +574,7 @@ console.log("Agent data:", {
 ```
 
 ### Step 2: Deploy Code Changes
+
 ```bash
 cd /home/petrunix/cube-pay-hacks
 git add -A
@@ -551,9 +583,11 @@ git push origin main
 ```
 
 ### Step 3: Update Environment Variables (if needed)
+
 No new environment variables required. Uses existing Supabase config.
 
 ### Step 4: Build & Deploy Front-end
+
 ```bash
 # Build the viewer app
 npm run build:viewer
@@ -567,6 +601,7 @@ npm run build:viewer
 ## 📊 Example Agent Data
 
 ### GPS-Positioned Agent
+
 ```json
 {
   "id": "550e8400-e29b-41d4-a716-446655440000",
@@ -581,6 +616,7 @@ npm run build:viewer
 ```
 
 ### Screen-Positioned Agent
+
 ```json
 {
   "id": "550e8400-e29b-41d4-a716-446655440001",
@@ -602,18 +638,21 @@ This screen agent appears in the **top-right corner** on all viewers' screens.
 ## 🎓 Concepts & Learning Resources
 
 ### NDC (Normalized Device Coordinates)
+
 - Standard 3D graphics coordinate system
 - Range: -1 to 1 on all axes
 - (0, 0, 0) = center of screen
 - Viewport-independent representation
 
 ### FOV (Field of View)
+
 - Determines visible area
 - Default: 45° vertical (typical for AR)
 - Affects coordinate scaling
 - Can be adjusted per camera
 
 ### Viewport
+
 - Browser window rendering area
 - Changes with window resize
 - Affects percentage-to-pixel conversion
@@ -635,9 +674,9 @@ For issues or questions about the dual positioning system:
 
 ## 📝 Version History
 
-| Version | Date | Changes |
-|---------|------|---------|
-| 1.0 | Feb 5, 2026 | Initial implementation - dual positioning system complete |
+| Version | Date        | Changes                                                   |
+| ------- | ----------- | --------------------------------------------------------- |
+| 1.0     | Feb 5, 2026 | Initial implementation - dual positioning system complete |
 
 ---
 

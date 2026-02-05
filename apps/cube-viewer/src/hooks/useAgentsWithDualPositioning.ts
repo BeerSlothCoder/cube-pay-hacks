@@ -23,7 +23,7 @@ interface UseAgentsWithDualPositioningResult {
 /**
  * Enhanced hook to fetch agents with support for dual positioning system
  * Handles both GPS-based (physical world) and screen-based (overlay) positioning
- * 
+ *
  * @param options Configuration options
  * @returns Agents with dual positioning support + stats
  */
@@ -123,9 +123,7 @@ export function useAgentsWithDualPositioning({
       console.log(
         `✅ Filtered to ${filteredGpsAgents.length} GPS agents within ${radius}m`,
       );
-      console.log(
-        `📺 Found ${_screenAgents.length} screen-positioned agents`,
-      );
+      console.log(`📺 Found ${_screenAgents.length} screen-positioned agents`);
 
       // Combine agents based on settings
       let allFilteredAgents = filteredGpsAgents;
@@ -141,8 +139,7 @@ export function useAgentsWithDualPositioning({
 
       console.log(`🎯 Total agents for rendering: ${allFilteredAgents.length}`);
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : "Unknown error";
+      const errorMessage = err instanceof Error ? err.message : "Unknown error";
       console.error("❌ Error fetching agents:", errorMessage);
       setError(errorMessage);
       setAgents([]);
@@ -175,7 +172,7 @@ export function useAgentsWithDualPositioning({
 
 /**
  * Helper hook to subscribe to real-time agent updates using Supabase
- * 
+ *
  * Listens for changes to deployed_objects table filtered by positioning_mode
  * This enables live updates when agents are added/moved in the streaming platform
  */
@@ -185,7 +182,7 @@ export function useRealtimeAgents(
   useEffect(() => {
     // This would subscribe to Supabase real-time changes
     // Implementation depends on Supabase client setup in your database-client
-    // 
+    //
     // Example (pseudo-code):
     // const subscription = supabase
     //   .from('deployed_objects')

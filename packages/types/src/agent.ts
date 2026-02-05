@@ -94,15 +94,15 @@ export interface DeployedObject {
   preciselatitude?: number; // RTK-enhanced latitude
   preciselongitude?: number; // RTK-enhanced longitude
   precisealtitude?: number; // RTK-enhanced altitude
-  
+
   // Dual positioning system configuration
   positioning_mode?: PositioningMode; // 'gps' or 'screen' (defaults to 'gps')
   positioning_config?: PositioningConfiguration; // Unified positioning config
-  
+
   // Screen positioning (for on-screen overlay)
   screen_position_x?: number; // 0-100 percentage from left
   screen_position_y?: number; // 0-100 percentage from top
-  
+
   // Legacy field (kept for backward compatibility)
   screen_position?: {
     x: number; // 0-100 percentage
