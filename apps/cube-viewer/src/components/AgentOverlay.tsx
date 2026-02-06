@@ -22,15 +22,32 @@ export const AgentOverlay: React.FC<AgentOverlayProps> = ({ filter }) => {
   const { agents } = useAgentStore();
   const { selectAgent } = usePaymentStore();
 
-  // Filter agents based on selected filter
+  // Filter agents based on selected filter AND positioning mode
+  // CRITICAL FIX: Only show screen-positioned agents
   // Normalizes agent types for backward compatibility
-  const filteredAgents =
-    filter === "all"
-      ? agents
-      : agents.filter((agent) => {
-          const normalizedType = normalizeAgentType(agent.agent_type || null);
-          return normalizedType === filter;
-        });
+  const filteredAgents = agents.filter((agent) => {
+    // Only show agents with screen positioning mode AND screen coordinates
+    // This prevents dual rendering (GPS view shows GPS agents, screen view shows screen agents)
+    if (agent.positioning_mode !== "screen") {
+      return false;
+    }
+
+    // Must have screen coordinates
+    if (
+      agent.screen_position?.x === undefined ||
+      agent.screen_position?.y === undefined
+    ) {
+      return false;
+    }
+
+    // Apply type filter
+    if (filter === "all") {
+      return true;
+    }
+
+    const normalizedType = normalizeAgentType(agent.agent_type || null);
+    return normalizedType === filter;
+  });
 
   useEffect(() => {
     const canvas = canvasRef.current;

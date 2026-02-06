@@ -41,8 +41,8 @@ export function useNearbyCubes({
         import.meta.env.VITE_SUPABASE_ANON_KEY || "",
       );
 
-      // Fetch all active deployed objects
-      // In production, this would use PostGIS distance queries
+      // Fetch all active deployed objects with GPS positioning
+      // Filter for agents with positioning_mode = 'gps' or null (default is GPS)
       const allCubes = await db.deployedObjects.list({
         filters: { status: "active" },
         limit: 1000, // Fetch more to filter locally
@@ -54,9 +54,16 @@ export function useNearbyCubes({
         return;
       }
 
-      // Filter cubes by distance
+      // Filter cubes by distance AND positioning mode
       const nearbyCubes = allCubes
         .filter((cube) => {
+          // CRITICAL FIX: Only include GPS-positioned agents
+          // Exclude screen-positioned agents to prevent dual rendering
+          if (cube.positioning_mode === "screen") {
+            return false;
+          }
+
+          // Must have GPS coordinates
           if (!cube.latitude || !cube.longitude) return false;
 
           const distance = calculateDistance(

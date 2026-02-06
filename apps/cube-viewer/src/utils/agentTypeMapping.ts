@@ -7,9 +7,11 @@ import type { AgentType } from "@cubepay/types";
 
 /**
  * Map agent types to display labels and metadata
+ * Updated to use clean snake_case types (no more repurposed legacy types)
  */
 export const AGENT_TYPE_META = {
-  "Virtual Terminal": {
+  // Clean new types (as stored in database)
+  artm_terminal: {
     label: "Virtual ATM",
     emoji: "🏧",
     keywords: ["atm", "terminal", "crypto", "cash"],
@@ -17,7 +19,7 @@ export const AGENT_TYPE_META = {
     badgeColor: "#0066ff",
     icon: "🏧",
   },
-  "Payment Terminal": {
+  pos_terminal: {
     label: "Payment Terminal - POS",
     emoji: "💳",
     keywords: ["payment", "pos", "terminal"],
@@ -25,11 +27,11 @@ export const AGENT_TYPE_META = {
     badgeColor: "#8b5cf6",
     icon: "💳",
   },
-  "Content Creator": {
+  my_payment_terminal: {
     label: "My Payment Terminal",
     emoji: "💰",
     keywords: ["creator", "personal", "merchant"],
-    badge: "CREATOR",
+    badge: "PERSONAL",
     badgeColor: "#f59e0b",
     icon: "💰",
   },
@@ -37,7 +39,7 @@ export const AGENT_TYPE_META = {
 
 /**
  * Normalize agent type from various sources
- * Handles backward compatibility for legacy values
+ * Handles backward compatibility for legacy values and capitalized formats
  *
  * @param agentType - Raw agent type value from database
  * @returns Normalized agent type or null if invalid
@@ -49,31 +51,68 @@ export const normalizeAgentType = (
     return null;
   }
 
-  // Handle legacy "home_security" type
-  if (agentType === "home_security") {
-    return "Virtual Terminal";
-  }
-
-  // Handle legacy "payment_terminal" (lowercase)
-  if (agentType === "payment_terminal") {
-    return "Payment Terminal";
-  }
-
-  // Handle legacy "content_creator" (lowercase)
-  if (agentType === "content_creator") {
-    return "Content Creator";
-  }
-
-  // Handle string "null" from database
+  // Handle string "null" or empty from database
   if (agentType === "null" || agentType === "") {
     return null;
   }
 
-  // Return as-is if already normalized
+  // === NEW CLEAN TYPES (primary) ===
+  // These are the correct database values after migration
+  if (agentType === "artm_terminal") {
+    return "artm_terminal";
+  }
+  if (agentType === "pos_terminal") {
+    return "pos_terminal";
+  }
+  if (agentType === "my_payment_terminal") {
+    return "my_payment_terminal";
+  }
+
+  // === LEGACY TYPE CONVERSIONS (backward compatibility) ===
+  // Convert old repurposed types to new clean types
+  if (agentType === "home_security") {
+    console.warn("Converting legacy type 'home_security' → 'artm_terminal'");
+    return "artm_terminal";
+  }
+  if (agentType === "payment_terminal") {
+    console.warn("Converting legacy type 'payment_terminal' → 'pos_terminal'");
+    return "pos_terminal";
+  }
+  if (agentType === "content_creator") {
+    console.warn(
+      "Converting legacy type 'content_creator' → 'my_payment_terminal'",
+    );
+    return "my_payment_terminal";
+  }
+
+  // === CAPITALIZED LEGACY FORMATS (from old UI) ===
+  // Handle "Virtual Terminal", "Payment Terminal", "Content Creator"
+  if (agentType === "Virtual Terminal") {
+    console.warn(
+      "Converting capitalized type 'Virtual Terminal' → 'artm_terminal'",
+    );
+    return "artm_terminal";
+  }
+  if (agentType === "Payment Terminal") {
+    console.warn(
+      "Converting capitalized type 'Payment Terminal' → 'pos_terminal'",
+    );
+    return "pos_terminal";
+  }
+  if (agentType === "Content Creator") {
+    console.warn(
+      "Converting capitalized type 'Content Creator' → 'my_payment_terminal'",
+    );
+    return "my_payment_terminal";
+  }
+
+  // Return as-is if it's a valid type in our metadata
   if (agentType in AGENT_TYPE_META) {
     return agentType as AgentType;
   }
 
+  // Unknown type
+  console.warn(`Unknown agent type: ${agentType}`);
   return null;
 };
 
@@ -91,7 +130,7 @@ export const isVirtualTerminal = (
   }
 
   const normalized = normalizeAgentType(agentType);
-  return normalized === "Virtual Terminal";
+  return normalized === "artm_terminal";
 };
 
 /**
@@ -108,16 +147,16 @@ export const isPaymentTerminal = (
   }
 
   const normalized = normalizeAgentType(agentType);
-  return normalized === "Payment Terminal";
+  return normalized === "pos_terminal";
 };
 
 /**
- * Check if agent is a Content Creator
+ * Check if agent is My Payment Terminal (Personal Terminal)
  *
  * @param agentType - Agent type value
- * @returns true if agent is Content Creator type
+ * @returns true if agent is My Payment Terminal type
  */
-export const isContentCreator = (
+export const isMyPaymentTerminal = (
   agentType: string | null | undefined,
 ): boolean => {
   if (!agentType || typeof agentType !== "string") {
@@ -125,7 +164,17 @@ export const isContentCreator = (
   }
 
   const normalized = normalizeAgentType(agentType);
-  return normalized === "Content Creator";
+  return normalized === "my_payment_terminal";
+};
+
+/**
+ * @deprecated Use isMyPaymentTerminal instead
+ * Check if agent is a Content Creator (legacy name)
+ */
+export const isContentCreator = (
+  agentType: string | null | undefined,
+): boolean => {
+  return isMyPaymentTerminal(agentType);
 };
 
 /**

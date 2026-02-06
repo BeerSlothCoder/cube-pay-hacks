@@ -4,15 +4,29 @@
  */
 
 export type AgentType =
+  // Payment & Transaction Agents (new clean types)
+  | "artm_terminal" // Virtual ATM (ARTM)
+  | "pos_terminal" // Payment Terminal - POS
+  | "my_payment_terminal" // My Payment Terminal (Personal)
+  // Other Agent Types
   | "ai_avatar"
   | "ar_portal"
   | "nft_display"
   | "interactive_billboard"
   | "virtual_assistant"
+  | "intelligent_assistant"
   | "game_character"
   | "tour_guide"
   | "product_showcase"
   | "event_host"
+  | "local_services"
+  | "escrow_manager"
+  | "nft_marketplace"
+  | "decentralized_storage"
+  | "crypto_wallet"
+  | "defi_aggregator"
+  | "prediction_market"
+  | "dao_governance"
   | "custom";
 
 export type DeploymentStatus =
