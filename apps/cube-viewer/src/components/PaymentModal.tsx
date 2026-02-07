@@ -11,6 +11,34 @@ import {
   EyeOff,
 } from "lucide-react";
 import QRCode from "qrcode";
+
+// Inject ARTM animation styles
+const ARTM_STYLES = `
+  @keyframes ledPulse {
+    0%, 100% { opacity: 1; filter: brightness(1) drop-shadow(0 0 8px rgba(0, 212, 255, 0.8)); }
+    50% { opacity: 0.7; filter: brightness(0.8) drop-shadow(0 0 4px rgba(0, 212, 255, 0.4)); }
+  }
+  
+  @keyframes scanlines {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(10px); }
+  }
+  
+  .artm-led-indicator {
+    animation: ledPulse 2s ease-in-out infinite;
+  }
+  
+  .artm-scanline {
+    animation: scanlines 8s linear infinite;
+  }
+`;
+
+// Inject styles into head
+if (typeof document !== "undefined") {
+  const styleSheet = document.createElement("style");
+  styleSheet.textContent = ARTM_STYLES;
+  document.head.appendChild(styleSheet);
+}
 import {
   WalletConnector,
   createGatewayClient,
@@ -702,25 +730,77 @@ export const PaymentModal: React.FC = () => {
 
   return (
     <div
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"
+      className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center"
       style={{ zIndex: 30 }}
     >
-      <div className="bg-cubepay-bg rounded-2xl p-6 max-w-md w-full mx-4 relative">
+      <style>{ARTM_STYLES}</style>
+      <div
+        className={
+          selectedPaymentFace === "crypto_qr" ||
+          selectedPaymentFace === "ens_payment"
+            ? "bg-gradient-to-b from-slate-900 to-slate-950 border-2 border-cyan-500 rounded-lg p-8 max-w-md w-full mx-4 relative shadow-2xl"
+            : "bg-cubepay-bg rounded-2xl p-6 max-w-md w-full mx-4 relative"
+        }
+      >
         {/* Close button */}
         <button
           onClick={closePaymentModal}
-          className="absolute top-4 right-4 text-cubepay-text-secondary hover:text-cubepay-text"
+          className={
+            selectedPaymentFace === "crypto_qr" ||
+            selectedPaymentFace === "ens_payment"
+              ? "absolute top-4 right-4 text-cyan-400 hover:text-cyan-300 transition-colors"
+              : "absolute top-4 right-4 text-cubepay-text-secondary hover:text-cubepay-text"
+          }
         >
           <X size={24} />
         </button>
 
+        {/* ARTM LED Indicator */}
+        {(selectedPaymentFace === "crypto_qr" ||
+          selectedPaymentFace === "ens_payment") && (
+          <div className="absolute top-4 left-4 flex gap-2">
+            <div className="artm-led-indicator w-3 h-3 rounded-full bg-cyan-400"></div>
+            <div className="w-3 h-3 rounded-full bg-slate-600"></div>
+          </div>
+        )}
+
         {/* Header */}
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold text-cubepay-text mb-2">
+        <div
+          className={
+            selectedPaymentFace === "crypto_qr" ||
+            selectedPaymentFace === "ens_payment"
+              ? "mb-6 text-center"
+              : "mb-6"
+          }
+        >
+          <h2
+            className={
+              selectedPaymentFace === "crypto_qr" ||
+              selectedPaymentFace === "ens_payment"
+                ? "text-2xl font-bold text-cyan-300 mb-2 font-mono tracking-wider"
+                : "text-2xl font-bold text-cubepay-text mb-2"
+            }
+          >
             {config.title}
           </h2>
-          <p className="text-cubepay-text-secondary">{config.description}</p>
-          <p className="text-sm text-cubepay-text-secondary mt-1">
+          <p
+            className={
+              selectedPaymentFace === "crypto_qr" ||
+              selectedPaymentFace === "ens_payment"
+                ? "text-cyan-300/60 text-sm font-mono"
+                : "text-cubepay-text-secondary"
+            }
+          >
+            {config.description}
+          </p>
+          <p
+            className={
+              selectedPaymentFace === "crypto_qr" ||
+              selectedPaymentFace === "ens_payment"
+                ? "text-xs text-cyan-400/50 mt-1 font-mono"
+                : "text-sm text-cubepay-text-secondary mt-1"
+            }
+          >
             Agent: {selectedAgent.agent_name}
           </p>
         </div>
@@ -737,23 +817,36 @@ export const PaymentModal: React.FC = () => {
               </>
             )}
 
-            <div className="border-t border-cubepay-text-secondary pt-4">
-              <p className="text-cubepay-text-secondary text-sm text-center mb-3">
-                Or scan QR code
+            <div className="border-t border-cyan-500/30 pt-4">
+              <p className="text-cyan-400 text-sm text-center mb-4 font-mono text-xs tracking-widest">
+                ░ SCAN QR CODE ░
               </p>
               {qrCodeUrl && (
-                <div className="flex flex-col items-center">
-                  <img
-                    src={qrCodeUrl}
-                    alt="Payment QR Code"
-                    className="w-48 h-48 border-2 border-cubepay-text-secondary rounded-lg"
-                  />
-                  <p className="text-xs text-cubepay-text-secondary text-center font-mono mt-2 break-all">
+                <div className="flex flex-col items-center space-y-3">
+                  <div className="relative">
+                    <img
+                      src={qrCodeUrl}
+                      alt="Payment QR Code"
+                      className="w-48 h-48 border-4 border-cyan-500 rounded-sm shadow-lg shadow-cyan-500/50 artm-scanline"
+                    />
+                    <div className="absolute inset-0 w-full h-full bg-gradient-to-b from-transparent via-cyan-500/5 to-transparent pointer-events-none rounded-sm"></div>
+                  </div>
+                  <p className="text-xs text-cyan-400/70 text-center font-mono break-all tracked-wide">
                     {selectedAgent.agent_wallet?.slice(0, 20)}...
                   </p>
+                  <div className="text-center text-xs text-cyan-400/50 font-mono">
+                    <p>Amount: {paymentAmount} USDC</p>
+                  </div>
                 </div>
               )}
             </div>
+
+            <button
+              onClick={closePaymentModal}
+              className="w-full mt-6 bg-transparent border-2 border-red-500/70 hover:border-red-400 hover:bg-red-500/10 text-red-400 hover:text-red-300 py-2 rounded-lg font-mono text-sm transition-all duration-200"
+            >
+              ✕ Cancel Payment
+            </button>
           </div>
         )}
 
@@ -815,10 +908,25 @@ export const PaymentModal: React.FC = () => {
 
             {isWalletConnected && (
               <>
+                {/* ENS Domain Info Display */}
+                {ensPaymentConfig && (
+                  <div className="bg-slate-800/50 border border-cyan-500/50 rounded-lg p-4 mb-2">
+                    <div className="text-center">
+                      <p className="text-cyan-400/70 text-xs font-mono mb-1">ENS Domain</p>
+                      <p className="text-cyan-300 font-mono text-lg font-bold truncate">
+                        {recipientInput}
+                      </p>
+                      <p className="text-cyan-400/60 text-xs font-mono mt-2 break-all">
+                        {ensPaymentConfig.resolvedAddress.slice(0, 6)}...{ensPaymentConfig.resolvedAddress.slice(-4)}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 {/* ENS Domain Input */}
                 <div>
-                  <label className="block text-sm text-amber-300 mb-2">
-                    ENS Domain
+                  <label className="block text-sm text-cyan-300 mb-2 font-mono text-xs tracking-widest">
+                    ▌ ENS DOMAIN
                   </label>
                   <div className="relative">
                     <input
@@ -832,20 +940,20 @@ export const PaymentModal: React.FC = () => {
                         )
                       }
                       placeholder="cube-pay.eth"
-                      className="w-full bg-cubepay-card text-cubepay-text px-4 py-3 rounded-lg outline-none focus:ring-2 focus:ring-amber-500"
+                      className="w-full bg-slate-800 border border-cyan-500/50 text-cyan-300 px-4 py-3 rounded-lg outline-none focus:ring-2 focus:ring-cyan-500 font-mono text-sm focus:border-cyan-400"
                     />
                     {isResolvingENS && (
                       <div className="absolute right-3 top-3">
                         <Loader2
-                          className="animate-spin text-amber-400"
+                          className="animate-spin text-cyan-400"
                           size={20}
                         />
                       </div>
                     )}
                   </div>
                   {!recipientInput.endsWith(".eth") && recipientInput && (
-                    <p className="text-xs text-red-400 mt-1">
-                      ⚠️ Please enter a valid .eth domain
+                    <p className="text-xs text-red-400 mt-1 font-mono">
+                      ⚠️ INVALID .eth DOMAIN
                     </p>
                   )}
                 </div>
@@ -863,36 +971,36 @@ export const PaymentModal: React.FC = () => {
                     {/* Advanced Options Toggle */}
                     <button
                       onClick={() => setShowENSAdvanced(!showENSAdvanced)}
-                      className="flex items-center gap-2 text-amber-400 hover:text-amber-300 text-sm transition-colors w-full justify-center"
+                      className="flex items-center gap-2 text-cyan-400 hover:text-cyan-300 text-sm transition-colors w-full justify-center font-mono text-xs"
                     >
                       {showENSAdvanced ? (
                         <>
                           <EyeOff size={16} />
-                          Hide Details
+                          HIDE DETAILS
                         </>
                       ) : (
                         <>
                           <Eye size={16} />
-                          Show Details
+                          SHOW DETAILS
                         </>
                       )}
                     </button>
 
                     {/* Advanced Options */}
                     {showENSAdvanced && (
-                      <div className="bg-amber-900/20 border border-amber-600/30 rounded-lg p-3 space-y-2">
+                      <div className="bg-slate-800/50 border border-cyan-500/30 rounded-lg p-3 space-y-2">
                         {ensPaymentConfig.preferredChain && (
                           <div className="text-xs space-y-1">
-                            <p className="text-amber-300">Recommended:</p>
-                            <p className="text-amber-200 font-semibold">
+                            <p className="text-cyan-300 font-mono">PREFERRED:</p>
+                            <p className="text-cyan-200 font-semibold font-mono">
                               {ensPaymentConfig.preferredChain}
                             </p>
                           </div>
                         )}
                         {ensPaymentConfig.preferredToken && (
                           <div className="text-xs space-y-1">
-                            <p className="text-amber-300">Preferred Token:</p>
-                            <p className="text-amber-200 font-semibold">
+                            <p className="text-cyan-300 font-mono">TOKEN:</p>
+                            <p className="text-cyan-200 font-semibold font-mono">
                               {ensPaymentConfig.preferredToken}
                             </p>
                           </div>
@@ -901,19 +1009,19 @@ export const PaymentModal: React.FC = () => {
                           href={`https://app.ens.domains/${recipientInput}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-amber-400 hover:text-amber-300 text-xs block mt-2"
+                          className="text-cyan-400 hover:text-cyan-300 text-xs block mt-2 font-mono"
                         >
-                          View on ENS →
+                          OPEN IN ENS →
                         </a>
                       </div>
                     )}
 
                     {/* Payment Form */}
-                    <div className="space-y-3 border-t border-amber-600/30 pt-4">
+                    <div className="space-y-3 border-t border-cyan-500/30 pt-4">
                       {/* Amount */}
                       <div>
-                        <label className="block text-sm text-cubepay-text-secondary mb-2">
-                          Amount (USDC)
+                        <label className="block text-xs text-cyan-300 mb-2 font-mono tracking-widest">
+                          ▌ AMOUNT (USDC)
                         </label>
                         <input
                           type="number"
@@ -921,21 +1029,21 @@ export const PaymentModal: React.FC = () => {
                           onChange={(e) => setPaymentAmount(e.target.value)}
                           min="0.01"
                           step="0.01"
-                          className="w-full bg-cubepay-card text-cubepay-text px-4 py-3 rounded-lg outline-none focus:ring-2 focus:ring-amber-500"
+                          className="w-full bg-slate-800 border border-cyan-500/50 text-cyan-300 px-4 py-3 rounded-lg outline-none focus:ring-2 focus:ring-cyan-500 font-mono text-sm focus:border-cyan-400"
                         />
                       </div>
 
                       {/* Chain Selection */}
                       <div>
-                        <label className="block text-sm text-cubepay-text-secondary mb-2">
-                          Network
+                        <label className="block text-xs text-cyan-300 mb-2 font-mono tracking-widest">
+                          ▌ NETWORK
                         </label>
                         <select
                           value={selectedChain}
                           onChange={(e) =>
                             setSelectedChain(Number(e.target.value))
                           }
-                          className="w-full bg-cubepay-card text-cubepay-text px-4 py-3 rounded-lg outline-none focus:ring-2 focus:ring-amber-500"
+                          className="w-full bg-slate-800 border border-cyan-500/50 text-cyan-300 px-4 py-3 rounded-lg outline-none focus:ring-2 focus:ring-cyan-500 font-mono text-sm focus:border-cyan-400"
                         >
                           {[
                             {
@@ -975,26 +1083,34 @@ export const PaymentModal: React.FC = () => {
                           !recipientInput.endsWith(".eth") ||
                           !ensPaymentConfig
                         }
-                        className="w-full bg-amber-600 hover:bg-amber-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white py-3 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2"
+                        className="w-full bg-cyan-600 hover:bg-cyan-700 disabled:bg-slate-700 disabled:cursor-not-allowed text-white py-3 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2 border border-cyan-500/50 hover:border-cyan-400"
                       >
                         {paymentStatus === "processing" ? (
                           <>
                             <Loader2 className="animate-spin" size={20} />
-                            Processing...
+                            PROCESSING...
                           </>
                         ) : (
-                          `Pay ${paymentAmount} USDC to ${recipientInput}`
+                          `PAY ${paymentAmount} USDC`
                         )}
                       </button>
                     </div>
+
+                    {/* Cancel Payment Button */}
+                    <button
+                      onClick={closePaymentModal}
+                      className="w-full mt-4 bg-transparent border-2 border-red-500/70 hover:border-red-400 hover:bg-red-500/10 text-red-400 hover:text-red-300 py-2 rounded-lg font-mono text-sm transition-all duration-200"
+                    >
+                      ✕ CANCEL PAYMENT
+                    </button>
                   </>
                 )}
 
                 {/* Resolution in progress */}
                 {isResolvingENS && (
-                  <div className="flex items-center justify-center gap-2 text-amber-400">
+                  <div className="flex items-center justify-center gap-2 text-cyan-400 font-mono text-sm">
                     <Loader2 className="animate-spin" size={20} />
-                    <span>Resolving {recipientInput}...</span>
+                    <span>RESOLVING {recipientInput}...</span>
                   </div>
                 )}
 
@@ -1002,14 +1118,12 @@ export const PaymentModal: React.FC = () => {
                 {recipientInput.endsWith(".eth") &&
                   !ensPaymentConfig &&
                   !isResolvingENS && (
-                    <div className="bg-red-900/30 border border-red-600/30 rounded-lg p-3">
+                    <div className="bg-red-900/30 border border-red-600/50 rounded-lg p-3">
                       <div className="flex items-center gap-2 text-red-400 mb-1">
                         <AlertCircle size={16} />
-                        <span className="text-sm font-semibold">
-                          Domain not found
-                        </span>
+                        <span className="text-sm font-semibold font-mono">DOMAIN NOT FOUND</span>
                       </div>
-                      <p className="text-xs text-red-300/70">
+                      <p className="text-xs text-red-300/70 font-mono">
                         Unable to resolve {recipientInput} on {ensNetwork}
                       </p>
                     </div>
