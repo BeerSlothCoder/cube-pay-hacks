@@ -338,13 +338,12 @@ export const PaymentModal: React.FC = () => {
       );
     }
 
+    // Crypto withdrawal is now handled internally by ARTMDisplayModal
+    // (wallet_balance screen → CryptoWithdrawalModal with full props)
     if (artmStep === "crypto") {
-      return (
-        <CryptoWithdrawalModal
-          agent={selectedAgent}
-          onClose={closePaymentModal}
-        />
-      );
+      // Redirect back to ARTM display which manages crypto flow
+      setArtmStep("display");
+      return null;
     }
   }
 
