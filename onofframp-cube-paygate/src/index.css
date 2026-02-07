@@ -1,0 +1,166 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-gray-200;
+  }
+  body {
+    @apply bg-dark-bg text-white font-sans;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-gradient-to-r from-cube-green to-cube-glow hover:from-cube-glow hover:to-cube-green text-white font-medium px-6 py-3 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-cube-green/25;
+  }
+
+  .btn-secondary {
+    @apply bg-dark-card hover:bg-dark-bg text-cube-green border border-cube-green/30 font-medium px-6 py-3 rounded-lg transition-colors duration-200;
+  }
+
+  .btn-success {
+    @apply bg-success hover:bg-success/90 text-white font-medium px-6 py-3 rounded-lg transition-colors duration-200;
+  }
+
+  .btn-danger {
+    @apply bg-error hover:bg-error/90 text-white font-medium px-6 py-3 rounded-lg transition-colors duration-200;
+  }
+
+  .card {
+    @apply bg-dark-card border border-cube-green/20 rounded-2xl shadow-lg p-6 transition-all duration-200;
+  }
+
+  .card-hover {
+    @apply hover:border-cube-green/40 hover:shadow-xl hover:shadow-cube-green/10;
+  }
+
+  .input-field {
+    @apply w-full px-4 py-3 bg-dark-bg border border-cube-green/30 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cube-green/50 focus:border-cube-green transition-colors duration-200;
+  }
+
+  .price-positive {
+    @apply text-success;
+  }
+
+  .price-negative {
+    @apply text-error;
+  }
+
+  .crypto-card {
+    @apply card card-hover cursor-pointer border-2 border-cube-green/20 hover:border-cube-green/40 transition-all duration-200;
+  }
+
+  .crypto-card.selected {
+    @apply border-cube-green bg-cube-green/10;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Loading animation */
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Price ticker animation */
+@keyframes scroll {
+  0% {
+    transform: translateX(100%);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+.animate-scroll {
+  animation: scroll 30s linear infinite;
+}
+/* CubePay specific styles */
+.cube-glow {
+  box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+}
+
+.cube-glow-strong {
+  box-shadow: 0 0 30px rgba(0, 255, 136, 0.5);
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, #ffffff 0%, #00ff88 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Animated background patterns */
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-10px) rotate(5deg);
+  }
+}
+
+.float-animation {
+  animation: float 6s ease-in-out infinite;
+}
+
+/* CubePay button variants */
+.btn-cubepay {
+  @apply bg-gradient-to-r from-cube-green to-cube-glow hover:from-cube-glow hover:to-cube-green text-white font-medium px-6 py-3 rounded-lg transition-all duration-200 shadow-lg shadow-cube-green/25;
+}
+
+.btn-cubepay:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 25px rgba(0, 255, 136, 0.3);
+}
+
+/* Trust indicators */
+.trust-indicator {
+  @apply flex items-center space-x-2 text-gray-300 text-sm;
+}
+
+.trust-indicator .icon {
+  @apply text-cube-green;
+}
+
+/* Price ticker improvements */
+.price-ticker {
+  background: linear-gradient(
+    90deg,
+    rgba(10, 15, 28, 0) 0%,
+    rgba(10, 15, 28, 1) 10%,
+    rgba(10, 15, 28, 1) 90%,
+    rgba(10, 15, 28, 0) 100%
+  );
+}
