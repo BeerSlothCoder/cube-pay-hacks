@@ -23,7 +23,7 @@ const Checkout = () => {
   const total = useCartStore((state) => state.getTotal());
 
   const [step, setStep] = useState<"shipping" | "payment" | "review">(
-    "shipping"
+    "shipping",
   );
   const [paymentMethod, setPaymentMethod] = useState("cubepay");
   const [isProcessing, setIsProcessing] = useState(false);
@@ -77,14 +77,14 @@ const Checkout = () => {
           size: item.size,
         })),
         merchantName: "CubePay Merch",
-        redirectUrl: `http://localhost:5175/order-confirmation?order_id=${orderId}`,
+        redirectUrl: `http://localhost:5183/order-confirmation?order_id=${orderId}`,
       };
 
       // Encode payment data
       const encodedData = btoa(JSON.stringify(paymentData));
 
-      // Redirect to payment redirect page
-      window.location.href = `http://localhost:5173/payment-redirect?data=${encodedData}`;
+      // Redirect to AR viewer payment terminal
+      window.location.href = `http://localhost:5176/ar-view?filter=myPaymentTerminals&data=${encodedData}`;
     } catch (error) {
       console.error("Failed to create payment:", error);
       alert("Failed to process order. Please try again.");

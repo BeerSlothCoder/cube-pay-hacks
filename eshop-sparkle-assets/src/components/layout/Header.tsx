@@ -1,18 +1,73 @@
 import { Link, useNavigate } from "react-router-dom";
-import { Search, ShoppingCart, Menu, X } from "lucide-react";
+import { Search, ShoppingCart, Menu, X, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useCartStore } from "@/stores/cartStore";
-import { useState } from "react";
-import { ConnectWallet, useAddress } from "@thirdweb-dev/react";
+import { useState, useEffect, useCallback } from "react";
 import cubePayLogo from "@/assets/cubepay-logo.png";
+import RotatableCube from "@/assets/RotatableCube";
+
+const shortenAddress = (addr: string) =>
+  addr ? `${addr.slice(0, 6)}...${addr.slice(-4)}` : "";
 
 export const Header = () => {
   const navigate = useNavigate();
   const itemCount = useCartStore((state) => state.getItemCount());
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const address = useAddress();
+  const [address, setAddress] = useState<string | null>(null);
+
+  const connectWallet = useCallback(async () => {
+    if (typeof window.ethereum !== "undefined") {
+      try {
+        const accounts = await window.ethereum.request({
+          method: "eth_requestAccounts",
+        });
+        if (accounts && accounts.length > 0) {
+          setAddress(accounts[0]);
+        }
+      } catch (err) {
+        console.error("Failed to connect wallet:", err);
+      }
+    } else {
+      alert("MetaMask is not installed. Please install MetaMask to connect.");
+    }
+  }, []);
+
+  const disconnectWallet = useCallback(() => {
+    setAddress(null);
+  }, []);
+
+  useEffect(() => {
+    // Check if already connected
+    if (typeof window.ethereum !== "undefined") {
+      window.ethereum
+        .request({ method: "eth_accounts" })
+        .then((accounts: string[]) => {
+          if (accounts && accounts.length > 0) {
+            setAddress(accounts[0]);
+          }
+        })
+        .catch(console.error);
+
+      // Listen for account changes
+      const handleAccountsChanged = (accounts: string[]) => {
+        if (accounts.length > 0) {
+          setAddress(accounts[0]);
+        } else {
+          setAddress(null);
+        }
+      };
+
+      window.ethereum.on("accountsChanged", handleAccountsChanged);
+      return () => {
+        window.ethereum?.removeListener(
+          "accountsChanged",
+          handleAccountsChanged,
+        );
+      };
+    }
+  }, []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -94,12 +149,21 @@ export const Header = () => {
             </Button>
 
             <div className="hidden md:block">
-              <ConnectWallet
-                theme="light"
-                btnTitle="Connect Wallet"
-                modalSize="compact"
-              />
+              {address ? (
+                <Button variant="outline" onClick={disconnectWallet}>
+                  <Wallet className="mr-2 h-4 w-4" />
+                  {shortenAddress(address)}
+                </Button>
+              ) : (
+                <Button onClick={connectWallet}>
+                  <Wallet className="mr-2 h-4 w-4" />
+                  Connect Wallet
+                </Button>
+              )}
             </div>
+
+            {/* Rotating Cube */}
+            <RotatableCube />
 
             <Button
               variant="ghost"
@@ -162,12 +226,26 @@ export const Header = () => {
               </Link>
             </nav>
             <div className="px-2">
-              <ConnectWallet
-                theme="light"
-                btnTitle="Connect Wallet"
-                modalSize="compact"
-                className="w-full"
-              />
+              {address ? (
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={disconnectWallet}
+                >
+                  <Wallet className="mr-2 h-4 w-4" />
+                  {shortenAddress(address)}
+                </Button>
+              ) : (
+                <Button className="w-full" onClick={connectWallet}>
+                  <Wallet className="mr-2 h-4 w-4" />
+                  Connect Wallet
+                </Button>
+              )}
+            </div>
+
+            {/* Rotating Cube - Mobile */}
+            <div className="flex justify-center py-2">
+              <RotatableCube />
             </div>
           </div>
         )}

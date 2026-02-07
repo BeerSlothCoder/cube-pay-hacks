@@ -180,12 +180,14 @@ export default function Checkout() {
                   <div className="bg-gray-100 rounded-lg p-4 text-left">
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
-                        <span className="text-text-secondary">Order ID:</span>
-                        <span className="font-semibold">#{order.id?.slice(0, 8).toUpperCase()}</span>
+                        <span className="text-black">Order ID:</span>
+                        <span className="font-semibold text-black">
+                          #{order.id?.slice(0, 8).toUpperCase()}
+                        </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-text-secondary">Amount:</span>
-                        <span className="font-semibold">
+                        <span className="text-black">Amount:</span>
+                        <span className="font-semibold text-black">
                           {formatCurrency(
                             order.fiatAmount +
                               order.fees.network +
@@ -194,14 +196,31 @@ export default function Checkout() {
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-text-secondary">
-                          Cryptocurrency:
+                        <span className="text-black">Cryptocurrency:</span>
+                        <span className="font-semibold text-black">
+                          {order.crypto.name} ({order.crypto.symbol})
                         </span>
-                        <span className="font-semibold">USDC</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-black">Crypto Amount:</span>
+                        <span className="font-semibold text-black">
+                          {formatCrypto(
+                            order.cryptoAmount,
+                            order.crypto.symbol,
+                            8,
+                          )}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-black">Delivery Wallet:</span>
+                        <span className="font-semibold text-black">
+                          {order.deliveryAddress?.slice(0, 6)}...
+                          {order.deliveryAddress?.slice(-4)}
+                        </span>
                       </div>
                     </div>
                   </div>
-                  <p className="text-text-secondary">
+                  <p className="text-black">
                     Your payment will be processed securely through your
                     personal CubePay virtual terminal.
                   </p>
@@ -259,7 +278,11 @@ export default function Checkout() {
                           Cryptocurrency:
                         </span>
                         <span className="flex items-center space-x-2">
-                          <span className="text-lg">{order.crypto.logo}</span>
+                          <img
+                            src={order.crypto.logo}
+                            alt={order.crypto.name}
+                            className="w-5 h-5"
+                          />
                           <span className="font-semibold">
                             {order.crypto.name} ({order.crypto.symbol})
                           </span>
@@ -355,12 +378,14 @@ export default function Checkout() {
                   <div className="max-w-md mx-auto bg-gray-100 rounded-lg p-6 mb-6">
                     <div className="space-y-2 text-left">
                       <div className="flex justify-between text-sm">
-                        <span className="text-text-secondary">Order ID:</span>
-                        <span className="font-semibold">{order.id}</span>
+                        <span className="text-gray-500">Order ID:</span>
+                        <span className="font-semibold text-gray-900">
+                          {order.id}
+                        </span>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <span className="text-text-secondary">Amount:</span>
-                        <span className="font-semibold">
+                        <span className="text-gray-500">Amount:</span>
+                        <span className="font-semibold text-gray-900">
                           {formatCurrency(
                             order.fiatAmount +
                               order.fees.network +
@@ -369,18 +394,20 @@ export default function Checkout() {
                         </span>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <span className="text-text-secondary">Type:</span>
-                        <span className="font-semibold">Crypto Purchase</span>
+                        <span className="text-gray-500">Type:</span>
+                        <span className="font-semibold text-gray-900">
+                          Crypto Purchase
+                        </span>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <span className="text-text-secondary">Crypto:</span>
-                        <span className="font-semibold">
+                        <span className="text-gray-500">Crypto:</span>
+                        <span className="font-semibold text-gray-900">
                           {order.crypto.symbol}
                         </span>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <span className="text-text-secondary">Quantity:</span>
-                        <span className="font-semibold">
+                        <span className="text-gray-500">Quantity:</span>
+                        <span className="font-semibold text-gray-900">
                           {formatCrypto(
                             order.cryptoAmount,
                             order.crypto.symbol,
@@ -390,7 +417,7 @@ export default function Checkout() {
                       </div>
                     </div>
                   </div>
-                  <p className="text-text-secondary mb-6">
+                  <p className="text-gray-500 mb-6">
                     Choose a payment method using CubePay terminals
                   </p>
                   <div className="space-y-4">
