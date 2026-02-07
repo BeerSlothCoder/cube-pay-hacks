@@ -12,7 +12,7 @@ import type { AgentType } from "@cubepay/types";
 export const AGENT_TYPE_META = {
   // Clean new types (as stored in database)
   artm_terminal: {
-    label: "Virtual ATM",
+    label: "ARTM Terminal",
     emoji: "🏧",
     keywords: ["atm", "terminal", "crypto", "cash"],
     badge: "ARTM",

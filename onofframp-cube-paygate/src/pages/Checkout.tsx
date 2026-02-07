@@ -181,7 +181,7 @@ export default function Checkout() {
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
                         <span className="text-text-secondary">Order ID:</span>
-                        <span className="font-semibold">#{order.id}</span>
+                        <span className="font-semibold">#{order.id?.slice(0, 8).toUpperCase()}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-text-secondary">Amount:</span>
@@ -197,20 +197,7 @@ export default function Checkout() {
                         <span className="text-text-secondary">
                           Cryptocurrency:
                         </span>
-                        <span className="font-semibold">
-                          {formatCrypto(
-                            order.cryptoAmount,
-                            order.crypto.symbol,
-                            8,
-                          )}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-text-secondary">Delivery:</span>
-                        <span className="font-semibold">
-                          Your wallet ({order.deliveryAddress?.slice(0, 6)}...
-                          {order.deliveryAddress?.slice(-4)})
-                        </span>
+                        <span className="font-semibold">USDC</span>
                       </div>
                     </div>
                   </div>
