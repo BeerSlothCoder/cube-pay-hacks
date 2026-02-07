@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from "react";
+import { Routes, Route, useNavigate } from "react-router-dom";
 import { CameraView } from "./components/CameraView";
 import { AgentOverlay } from "./components/AgentOverlay";
 import { PaymentCube } from "./components/PaymentCube";
 import { PaymentModal } from "./components/PaymentModal";
 import { GPSCubeRenderer } from "./components/GPSCubeRenderer";
 import { FilterPanel, type AgentFilters } from "./components/FilterPanel";
+import { AgentMapView } from "./components/AgentMapView";
 import { useAgentStore } from "./stores/agentStore";
 import { usePaymentStore } from "./stores/paymentStore";
 import { createCubePayDatabase } from "@cubepay/database-client";
@@ -12,7 +14,8 @@ import { Filter, MapPin, Zap, Navigation, X } from "lucide-react";
 
 type ViewMode = "screen" | "gps";
 
-function App() {
+function MainView() {
+  const navigate = useNavigate();
   const { agents, loadAgents } = useAgentStore();
   const { selectedAgent, showCube, selectAgent } = usePaymentStore();
   const [showFilterPanel, setShowFilterPanel] = useState(false);
@@ -177,9 +180,31 @@ function App() {
               </span>
             </div>
           )}
+
+          {/* Agent Map Button */}
+          <button
+            onClick={() => navigate("/agent-map")}
+            className="bg-blue-600 hover:bg-blue-500 bg-opacity-90 px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+          >
+            <MapPin size={16} />
+            <span className="text-sm font-semibold">Agent Map</span>
+          </button>
         </div>
       </div>
     </div>
+  );
+}
+
+function App() {
+  const navigate = useNavigate();
+  return (
+    <Routes>
+      <Route path="/" element={<MainView />} />
+      <Route
+        path="/agent-map"
+        element={<AgentMapView onBack={() => navigate("/")} />}
+      />
+    </Routes>
   );
 }
 

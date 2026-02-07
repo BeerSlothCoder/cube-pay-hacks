@@ -15,7 +15,12 @@
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true
+    "noFallthroughCasesInSwitch": true,
+    "paths": {
+      "react-map-gl": ["../../node_modules/react-map-gl"],
+      "mapbox-gl": ["../../node_modules/mapbox-gl"],
+      "mapbox-gl/*": ["../../node_modules/mapbox-gl/*"]
+    }
   },
   "include": ["src"],
   "references": [

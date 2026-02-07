@@ -115,9 +115,7 @@ export const ARTMDisplayModal: React.FC<ARTMDisplayModalProps> = ({
       const network = await provider.getNetwork();
       const cId = Number(network.chainId);
       setChainId(cId);
-      setWalletNetwork(
-        NETWORK_NAMES[cId] || `Chain ${cId}`
-      );
+      setWalletNetwork(NETWORK_NAMES[cId] || `Chain ${cId}`);
 
       // Read ETH balance
       const ethBal = await provider.getBalance(address);
@@ -418,9 +416,7 @@ export const ARTMDisplayModal: React.FC<ARTMDisplayModalProps> = ({
           {/* Recipient info */}
           {recipientAddress && (
             <div className="bg-slate-800/30 border border-slate-700/50 rounded-lg p-3 mb-6">
-              <p className="text-slate-500 text-xs mb-1">
-                Terminal Recipient
-              </p>
+              <p className="text-slate-500 text-xs mb-1">Terminal Recipient</p>
               <p className="text-slate-300 text-xs font-mono truncate">
                 {recipientAddress}
               </p>

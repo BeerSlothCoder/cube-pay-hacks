@@ -87,18 +87,20 @@ export const CryptoWithdrawalModal: React.FC<CryptoWithdrawalModalProps> = ({
   const [txSuccess, setTxSuccess] = useState(false);
   const [cashDispensing, setCashDispensing] = useState(false);
 
-  const usdcAvailable = USDC_CONTRACTS[chainId] && USDC_CONTRACTS[chainId] !== "0x0000000000000000000000000000000000000000";
-  const currentBalance = token === "USDC" ? parseFloat(walletBalance) : parseFloat(ethBalance);
+  const usdcAvailable =
+    USDC_CONTRACTS[chainId] &&
+    USDC_CONTRACTS[chainId] !== "0x0000000000000000000000000000000000000000";
+  const currentBalance =
+    token === "USDC" ? parseFloat(walletBalance) : parseFloat(ethBalance);
   const parsedAmount = parseFloat(amount) || 0;
-  const eurAmount = token === "USDC" ? parsedAmount * 0.92 : parsedAmount * 0.92; // Mocked EUR rate
+  const eurAmount =
+    token === "USDC" ? parsedAmount * 0.92 : parsedAmount * 0.92; // Mocked EUR rate
   const explorerUrl = BLOCK_EXPLORERS[chainId] || "https://etherscan.io";
   const isOverBalance = parsedAmount > currentBalance;
 
   // Quick-select amounts
   const quickAmounts =
-    token === "USDC"
-      ? [10, 20, 50, 100]
-      : [0.01, 0.05, 0.1, 0.5];
+    token === "USDC" ? [10, 20, 50, 100] : [0.01, 0.05, 0.1, 0.5];
 
   // Copy TX hash
   const handleCopyTxHash = () => {
@@ -322,11 +324,13 @@ export const CryptoWithdrawalModal: React.FC<CryptoWithdrawalModalProps> = ({
           {/* Balance display */}
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
             <p className="text-xs text-gray-600">
-              Available: <span className="font-bold text-blue-600">
+              Available:{" "}
+              <span className="font-bold text-blue-600">
                 {currentBalance.toLocaleString(undefined, {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: token === "USDC" ? 6 : 8,
-                })} {token}
+                })}{" "}
+                {token}
               </span>
             </p>
           </div>
@@ -367,7 +371,12 @@ export const CryptoWithdrawalModal: React.FC<CryptoWithdrawalModalProps> = ({
             )}
             {parsedAmount > 0 && (
               <p className="text-gray-500 text-xs mt-1">
-                ≈ €{eurAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} EUR
+                ≈ €
+                {eurAmount.toLocaleString(undefined, {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}{" "}
+                EUR
               </p>
             )}
           </div>
@@ -453,7 +462,11 @@ export const CryptoWithdrawalModal: React.FC<CryptoWithdrawalModalProps> = ({
             <div className="flex justify-between">
               <span className="text-gray-600 text-sm">EUR Equivalent</span>
               <span className="font-semibold text-gray-700">
-                ≈ €{eurAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                ≈ €
+                {eurAmount.toLocaleString(undefined, {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
               </span>
             </div>
             <div className="border-t pt-3 space-y-2">
