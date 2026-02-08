@@ -1,376 +1,529 @@
 /**
- * Circle Gateway Integration for Cross-Chain USDC Transfers
+ * Circle Arc Gateway Client
  *
- * Enables chain-abstracted payments using Arc as liquidity hub
- * Supports seamless USDC transfers across all EVM chains
+ * Manages all interactions with Circle's Arc Gateway for cross-chain USDC transfers.
+ *
+ * Architecture:
+ * - Arc Gateway (routing layer): Chain detection, fee estimation, request validation
+ * - CCTP Protocol (mechanics): Burn/mint operations on source/destination chains
+ * - Arc Blockchain (settlement): Deterministic settlement with Circle attestations
+ *
+ * API Reference:
+ * - REST API: Settlement status, liquidity queries, fee estimation
+ * - WebSocket API: Real-time settlement confirmations, status updates
+ * - SDK: TypeScript/Python/Go libraries
+ *
+ * Circle Arc Documentation: https://docs.circle.com/arc
  */
 
-import { ethers } from "ethers";
+import axios, { AxiosInstance } from "axios";
 
-/**
- * Circle Gateway Configuration
- */
-export interface GatewayConfig {
+// ============================================================================
+// Types & Interfaces
+// ============================================================================
+
+export interface CircleArcConfig {
+  apiKey: string;
   appId: string;
-  apiKey?: string;
-  testnet: boolean;
+  apiUrl: string; // e.g., https://api.circle.com for mainnet or https://api-sandbox.circle.com for testnet
+  wsUrl?: string; // e.g., wss://api.circle.com for WebSocket connections
+  environment: "testnet" | "mainnet";
+  maxRetries?: number;
+  retryDelayMs?: number;
+  timeoutMs?: number;
 }
 
-/**
- * Cross-chain transfer request
- */
-export interface CrossChainTransferRequest {
+export interface ArcTransferRequest {
+  idempotencyKey: string; // UUID for idempotent transfers
   sourceChainId: number;
   destinationChainId: number;
-  amount: string; // Amount in USDC (6 decimals)
-  destinationAddress: string;
-  sourceAddress: string;
+  senderAddress: string; // Payer wallet address
+  recipientAddress: string; // Receiver wallet address
+  amount: string; // In USDC, e.g., "100.50"
+  settlementRequired?: boolean; // Require Arc Blockchain settlement confirmation
+  attestationRequired?: boolean; // Require Circle attestations
 }
 
-/**
- * Transfer status response
- */
-export interface TransferStatus {
+export interface ArcTransferResponse {
+  transferId: string; // Circle's unique transfer ID
+  status: "pending" | "processing" | "completed" | "failed";
+  transactionHash?: string; // Source chain burn transaction
+  amount: string;
+  fee: string;
+  estimatedSettlementTime: number; // milliseconds
+  arcBlockchainTxId?: string; // Arc settlement transaction ID
+  arcSettlementEpoch?: number; // Batch number on Arc Blockchain
+  createdAt: string;
+  updatedAt: string;
+  cctpBurnTxHash?: string; // Source chain CCTP burn
+  cctpMintTxHash?: string; // Destination chain CCTP mint
+  attestations?: {
+    requiredCount: number;
+    collectedCount: number;
+    signatures: Array<{
+      attester: string;
+      signature: string;
+      timestamp: string;
+    }>;
+  };
+}
+
+export interface ArcFeeQuote {
+  sourceChainId: number;
+  destinationChainId: number;
+  amount: string;
+  feePercentage: string;
+  feeAmount: string;
+  totalAmount: string;
+  estimatedSettlementMs: number;
+  liquidity: {
+    available: boolean;
+    amountAvailable: string;
+    estimatedFillTime: number; // milliseconds
+  };
+}
+
+export interface ArcSettlementStatus {
   transferId: string;
   status: "pending" | "processing" | "completed" | "failed";
-  sourceChain: number;
-  destinationChain: number;
-  amount: string;
-  sourceTransactionHash?: string;
-  destinationTransactionHash?: string;
-  estimatedCompletionTime?: number; // seconds
-  fee?: string;
-}
-
-/**
- * Unified balance across all chains
- */
-export interface UnifiedBalance {
-  totalUSDC: string;
-  balancesByChain: Record<number, string>;
-  availableChains: number[];
-}
-
-/**
- * Circle Gateway Client for Arc-powered cross-chain transfers
- */
-export class CircleGatewayClient {
-  private config: GatewayConfig;
-  private baseUrl: string;
-
-  // USDC token addresses per chain (ERC-20)
-  private USDC_ADDRESSES: Record<number, string> = {
-    1: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", // Ethereum Mainnet
-    11155111: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238", // Sepolia
-    8453: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", // Base Mainnet
-    84532: "0x036CbD53842c5426634e7929541eC2318f3dCF7e", // Base Sepolia
-    42161: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831", // Arbitrum One
-    421614: "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d", // Arbitrum Sepolia
-    10: "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85", // Optimism Mainnet
-    11155420: "0x5fd84259d66Cd46123540766Be93DFE6D43130D7", // Optimism Sepolia
-    137: "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359", // Polygon Mainnet
-    80002: "0x41E94Eb019C0762f9Bfcf9Fb1E58725BfB0e7582", // Polygon Amoy
-    43114: "0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E", // Avalanche C-Chain
-    43113: "0x5425890298aed601595a70AB815c96711a31Bc65", // Avalanche Fuji
+  confirmationDepth: number;
+  confirmationRequired: number;
+  arcBlockchainTxId?: string;
+  arcConfirmationCount?: number;
+  cctpBurnConfirmed: boolean;
+  cctpMintConfirmed: boolean;
+  arcAttestationStatus: {
+    required: number;
+    collected: number;
+    percentage: number;
   };
+  errorMessage?: string;
+  lastStatusCheckAt: string;
+}
 
-  constructor(config: GatewayConfig) {
-    this.config = config;
-    this.baseUrl = config.testnet
-      ? "https://api-sandbox.circle.com/v1/gateway"
-      : "https://api.circle.com/v1/gateway";
+export interface ArcLiquidityStatus {
+  chainId: number;
+  totalLiquidity: string; // Total USDC liquidity available
+  availableLiquidity: string; // Available after pending transfers
+  utilizationPercentage: number;
+  estimatedFillTime: number; // milliseconds to fill request
+  lastUpdateAt: string;
+}
+
+export interface ArcWebSocketMessage {
+  type: "settlement:status" | "blockchain:confirmation" | "error";
+  transferId?: string;
+  data: {
+    status?: string;
+    confirmationDepth?: number;
+    arcBlockchainTxId?: string;
+    message?: string;
+    timestamp: string;
+  };
+}
+
+// ============================================================================
+// Circle Arc Gateway Client
+// ============================================================================
+
+export class CircleGatewayClient {
+  private config: CircleArcConfig;
+  private httpClient: AxiosInstance;
+  private wsConnection?: WebSocket;
+  private wsSubscriptions: Set<string> = new Set(); // Subscribed transfer IDs
+
+  constructor(config: CircleArcConfig) {
+    this.config = {
+      maxRetries: 3,
+      retryDelayMs: 1000,
+      timeoutMs: 30000,
+      ...config,
+    };
+
+    // Initialize HTTP client with retry logic
+    this.httpClient = axios.create({
+      baseURL: this.config.apiUrl,
+      timeout: this.config.timeoutMs,
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${this.config.apiKey}`,
+        "X-App-Id": this.config.appId,
+      },
+    });
+
+    // Add retry interceptor
+    this.httpClient.interceptors.response.use(
+      (response) => response,
+      async (error) => {
+        const config = error.config;
+        if (!config || !config.__retryCount) {
+          config.__retryCount = 0;
+        }
+
+        if (
+          (error.response?.status === 429 ||
+            error.response?.status === 503) &&
+          config.__retryCount < this.config.maxRetries!
+        ) {
+          config.__retryCount++;
+          await new Promise((resolve) =>
+            setTimeout(
+              resolve,
+              this.config.retryDelayMs! * Math.pow(2, config.__retryCount - 1)
+            )
+          );
+          return this.httpClient(config);
+        }
+
+        return Promise.reject(error);
+      }
+    );
+
+    console.log(
+      `[Circle Arc Gateway Client] Initialized for ${this.config.environment} environment`
+    );
   }
 
   /**
-   * Get unified USDC balance across all supported chains
-   * This is the key Circle Gateway feature - treating multiple chains as one liquidity surface
+   * Initiate Arc transfer (CCTP + Arc Blockchain settlement)
    */
-  async getUnifiedBalance(address: string): Promise<UnifiedBalance> {
-    const balances: Record<number, string> = {};
-    const supportedChains = Object.keys(this.USDC_ADDRESSES).map(Number);
+  async initiateTransfer(
+    request: ArcTransferRequest
+  ): Promise<ArcTransferResponse> {
+    try {
+      this.validateTransferRequest(request);
 
-    // Query balance on each chain
-    // In production, Circle Gateway aggregates this automatically
-    for (const chainId of supportedChains) {
-      try {
-        const balance = await this.getChainBalance(address, chainId);
-        if (parseFloat(balance) > 0) {
-          balances[chainId] = balance;
+      const feeQuote = await this.getArcFeeQuote(
+        request.sourceChainId,
+        request.destinationChainId,
+        request.amount
+      );
+
+      if (!feeQuote.liquidity.available) {
+        throw new Error(
+          `Insufficient Arc liquidity: need ${request.amount} USDC, available ${feeQuote.liquidity.amountAvailable}`
+        );
+      }
+
+      const response = await this.httpClient.post(
+        "/v1/transfers/create",
+        {
+          idempotencyKey: request.idempotencyKey,
+          sourceChainId: request.sourceChainId,
+          destinationChainId: request.destinationChainId,
+          senderAddress: request.senderAddress,
+          recipientAddress: request.recipientAddress,
+          amount: request.amount,
+          settlementRequired: request.settlementRequired !== false,
+          attestationRequired: request.attestationRequired !== false,
         }
-      } catch (error) {
-        console.error(`Failed to fetch balance on chain ${chainId}:`, error);
-        balances[chainId] = "0";
+      );
+
+      return this.normalizeTransferResponse(response.data);
+    } catch (error) {
+      console.error("[Arc Gateway] Transfer initiation failed:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get fee quote from Arc Gateway
+   */
+  async getArcFeeQuote(
+    sourceChainId: number,
+    destinationChainId: number,
+    amount: string
+  ): Promise<ArcFeeQuote> {
+    try {
+      const response = await this.httpClient.get("/v1/quotes/fee", {
+        params: {
+          sourceChainId,
+          destinationChainId,
+          amount,
+        },
+      });
+
+      return response.data;
+    } catch (error) {
+      console.error("[Arc Gateway] Fee quote request failed:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Check Arc Blockchain settlement status
+   */
+  async checkSettlementStatus(
+    transferId: string
+  ): Promise<ArcSettlementStatus> {
+    try {
+      const response = await this.httpClient.get(
+        `/v1/transfers/${transferId}/settlement`
+      );
+
+      const data = response.data;
+
+      return {
+        transferId: data.id,
+        status: data.status,
+        confirmationDepth: data.confirmationDepth || 0,
+        confirmationRequired: data.confirmationRequired || 6,
+        arcBlockchainTxId: data.arcBlockchainTxId,
+        arcConfirmationCount: data.arcConfirmationCount,
+        cctpBurnConfirmed: data.cctpBurnConfirmed,
+        cctpMintConfirmed: data.cctpMintConfirmed,
+        arcAttestationStatus: {
+          required: data.arcAttesters?.required || 0,
+          collected: data.arcAttesters?.collected || 0,
+          percentage: data.arcAttesters
+            ? (data.arcAttesters.collected / data.arcAttesters.required) * 100
+            : 0,
+        },
+        errorMessage: data.errorMessage,
+        lastStatusCheckAt: new Date().toISOString(),
+      };
+    } catch (error) {
+      console.error("[Arc Gateway] Settlement status check failed:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get liquidity status for a specific chain
+   */
+  async getArcLiquidity(chainId: number): Promise<ArcLiquidityStatus> {
+    try {
+      const response = await this.httpClient.get(`/v1/liquidity/${chainId}`);
+
+      return response.data;
+    } catch (error) {
+      console.error("[Arc Gateway] Liquidity check failed:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get all Arc Blockchain liquidity pools
+   */
+  async getAllArcLiquidity(): Promise<ArcLiquidityStatus[]> {
+    try {
+      const response = await this.httpClient.get("/v1/liquidity/all");
+
+      return response.data.chains || [];
+    } catch (error) {
+      console.error("[Arc Gateway] All liquidity check failed:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Subscribe to Arc Blockchain settlement updates via WebSocket
+   */
+  subscribeToSettlementUpdates(
+    transferIds: string[],
+    onMessage: (message: ArcWebSocketMessage) => void,
+    onError?: (error: Error) => void
+  ): void {
+    if (!this.config.wsUrl) {
+      console.warn("[Arc Gateway] WebSocket not configured");
+      return;
+    }
+
+    try {
+      if (this.wsConnection) {
+        this.wsConnection.close();
+      }
+
+      this.wsConnection = new WebSocket(this.config.wsUrl);
+
+      this.wsConnection.onopen = () => {
+        console.log("[Arc Gateway] WebSocket connected");
+
+        transferIds.forEach((id) => {
+          this.wsConnection!.send(
+            JSON.stringify({
+              action: "subscribe",
+              transferId: id,
+            })
+          );
+          this.wsSubscriptions.add(id);
+        });
+      };
+
+      this.wsConnection.onmessage = (event) => {
+        try {
+          const message: ArcWebSocketMessage = JSON.parse(event.data);
+          onMessage(message);
+        } catch (error) {
+          console.error("[Arc Gateway] Failed to parse WebSocket message:", error);
+        }
+      };
+
+      this.wsConnection.onerror = (event) => {
+        console.error("[Arc Gateway] WebSocket error:", event);
+        if (onError) {
+          onError(new Error("WebSocket connection error"));
+        }
+      };
+
+      this.wsConnection.onclose = () => {
+        console.log("[Arc Gateway] WebSocket disconnected");
+      };
+    } catch (error) {
+      console.error("[Arc Gateway] WebSocket subscription failed:", error);
+      if (onError) {
+        onError(error as Error);
+      }
+    }
+  }
+
+  /**
+   * Unsubscribe from Arc settlement updates
+   */
+  unsubscribeFromSettlementUpdates(transferId: string): void {
+    if (this.wsConnection && this.wsConnection.readyState === WebSocket.OPEN) {
+      this.wsConnection.send(
+        JSON.stringify({
+          action: "unsubscribe",
+          transferId,
+        })
+      );
+      this.wsSubscriptions.delete(transferId);
+    }
+  }
+
+  /**
+   * Verify Arc Blockchain attestations
+   */
+  async verifyAttestations(
+    transferId: string
+  ): Promise<{ verified: boolean; count: number; required: number }> {
+    try {
+      const response = await this.httpClient.get(
+        `/v1/transfers/${transferId}/attestations`
+      );
+
+      return {
+        verified:
+          response.data.collected >= response.data.required,
+        count: response.data.collected,
+        required: response.data.required,
+      };
+    } catch (error) {
+      console.error("[Arc Gateway] Attestation verification failed:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Poll transfer status (alternative to WebSocket)
+   */
+  async pollTransferStatus(
+    transferId: string,
+    maxAttempts: number = 120,
+    intervalMs: number = 500
+  ): Promise<ArcSettlementStatus> {
+    let attempts = 0;
+
+    while (attempts < maxAttempts) {
+      const status = await this.checkSettlementStatus(transferId);
+
+      if (status.status === "completed" || status.status === "failed") {
+        return status;
+      }
+
+      attempts++;
+      if (attempts < maxAttempts) {
+        await new Promise((resolve) => setTimeout(resolve, intervalMs));
       }
     }
 
-    // Calculate total across all chains
-    const totalUSDC = Object.values(balances)
-      .reduce((sum, bal) => sum + parseFloat(bal), 0)
-      .toFixed(6);
+    throw new Error(
+      `Transfer ${transferId} did not complete after ${maxAttempts * intervalMs}ms`
+    );
+  }
 
+  /**
+   * Validate transfer request before sending to Arc Gateway
+   */
+  private validateTransferRequest(request: ArcTransferRequest): void {
+    if (!/^0x[a-fA-F0-9]{40}$/.test(request.senderAddress)) {
+      throw new Error("Invalid sender address");
+    }
+
+    if (!/^0x[a-fA-F0-9]{40}$/.test(request.recipientAddress)) {
+      throw new Error("Invalid recipient address");
+    }
+
+    const amount = parseFloat(request.amount);
+    if (isNaN(amount) || amount <= 0) {
+      throw new Error("Invalid amount");
+    }
+
+    if (!request.idempotencyKey) {
+      throw new Error("Idempotency key required");
+    }
+
+    if (request.sourceChainId === request.destinationChainId) {
+      throw new Error("Source and destination chains must be different");
+    }
+  }
+
+  /**
+   * Normalize Arc Gateway API response to standard format
+   */
+  private normalizeTransferResponse(data: any): ArcTransferResponse {
     return {
-      totalUSDC,
-      balancesByChain: balances,
-      availableChains: Object.keys(balances)
-        .filter((chain) => parseFloat(balances[Number(chain)]) > 0)
-        .map(Number),
+      transferId: data.id,
+      status: data.status,
+      amount: data.amount,
+      fee: data.fee || "0",
+      estimatedSettlementTime: data.estimatedSettlementTime || 5000,
+      createdAt: data.createdAt || new Date().toISOString(),
+      updatedAt: data.updatedAt || new Date().toISOString(),
+      ...(data.transactionHash && { transactionHash: data.transactionHash }),
+      ...(data.arcBlockchainTxId && { arcBlockchainTxId: data.arcBlockchainTxId }),
+      ...(data.arcSettlementEpoch && { arcSettlementEpoch: data.arcSettlementEpoch }),
+      ...(data.cctpBurnTxHash && { cctpBurnTxHash: data.cctpBurnTxHash }),
+      ...(data.cctpMintTxHash && { cctpMintTxHash: data.cctpMintTxHash }),
+      ...(data.attestations && { attestations: data.attestations }),
     };
   }
 
   /**
-   * Get USDC balance on a specific chain
+   * Disconnect WebSocket and cleanup
    */
-  private async getChainBalance(
-    address: string,
-    chainId: number,
-  ): Promise<string> {
-    const usdcAddress = this.USDC_ADDRESSES[chainId];
-    if (!usdcAddress) {
-      return "0";
+  disconnect(): void {
+    if (this.wsConnection) {
+      this.wsConnection.close();
+      this.wsConnection = undefined;
     }
-
-    try {
-      const rpcUrl = this.getRpcUrl(chainId);
-      const provider = new ethers.JsonRpcProvider(rpcUrl);
-
-      const usdcContract = new ethers.Contract(
-        usdcAddress,
-        ["function balanceOf(address) view returns (uint256)"],
-        provider,
-      );
-
-      const balance = await usdcContract.balanceOf(address);
-      // USDC has 6 decimals
-      return ethers.formatUnits(balance, 6);
-    } catch (error) {
-      console.error(`Balance query failed for chain ${chainId}:`, error);
-      return "0";
-    }
-  }
-
-  /**
-   * Execute cross-chain USDC transfer via Circle Gateway
-   * This uses Arc as the liquidity hub to route payments across chains
-   */
-  async executeCrossChainTransfer(
-    request: CrossChainTransferRequest,
-    provider: any,
-  ): Promise<TransferStatus> {
-    const {
-      sourceChainId,
-      destinationChainId,
-      amount,
-      destinationAddress,
-      sourceAddress,
-    } = request;
-
-    // Same chain - execute direct transfer
-    if (sourceChainId === destinationChainId) {
-      return this.executeDirectTransfer(request, provider);
-    }
-
-    // Cross-chain transfer via Circle Gateway
-    console.log(
-      `🌉 Circle Gateway: Routing ${amount} USDC from chain ${sourceChainId} → ${destinationChainId}`,
-    );
-
-    try {
-      // Step 1: Approve Gateway to spend USDC
-      const approvalHash = await this.approveGatewaySpend(
-        sourceChainId,
-        amount,
-        provider,
-      );
-
-      // Step 2: Initiate cross-chain transfer
-      // In production, this uses Circle's CCTP (Cross-Chain Transfer Protocol)
-      const transferId = this.generateTransferId();
-
-      // Step 3: Circle Gateway routes through Arc liquidity hub
-      // This happens automatically - no user bridging needed!
-      const sourceUsdcAddress = this.USDC_ADDRESSES[sourceChainId];
-      const ethersProvider = new ethers.BrowserProvider(provider);
-      const signer = await ethersProvider.getSigner();
-
-      const usdcContract = new ethers.Contract(
-        sourceUsdcAddress,
-        ["function transfer(address to, uint256 amount) returns (bool)"],
-        signer,
-      );
-
-      // Convert amount to 6 decimals
-      const amountWei = ethers.parseUnits(amount, 6);
-
-      // Execute transfer (in production, this goes through Gateway contract)
-      const tx = await usdcContract.transfer(destinationAddress, amountWei);
-      const receipt = await tx.wait();
-
-      return {
-        transferId,
-        status: "completed",
-        sourceChain: sourceChainId,
-        destinationChain: destinationChainId,
-        amount,
-        sourceTransactionHash: receipt.hash,
-        destinationTransactionHash: receipt.hash, // Same for now
-        estimatedCompletionTime: 0,
-        fee: this.calculateGatewayFee(amount),
-      };
-    } catch (error) {
-      throw new Error(
-        `Cross-chain transfer failed: ${(error as Error).message}`,
-      );
-    }
-  }
-
-  /**
-   * Execute direct transfer on same chain
-   */
-  private async executeDirectTransfer(
-    request: CrossChainTransferRequest,
-    provider: any,
-  ): Promise<TransferStatus> {
-    const { sourceChainId, amount, destinationAddress } = request;
-
-    const usdcAddress = this.USDC_ADDRESSES[sourceChainId];
-    const ethersProvider = new ethers.BrowserProvider(provider);
-    const signer = await ethersProvider.getSigner();
-
-    const usdcContract = new ethers.Contract(
-      usdcAddress,
-      ["function transfer(address to, uint256 amount) returns (bool)"],
-      signer,
-    );
-
-    const amountWei = ethers.parseUnits(amount, 6);
-    const tx = await usdcContract.transfer(destinationAddress, amountWei);
-    const receipt = await tx.wait();
-
-    return {
-      transferId: this.generateTransferId(),
-      status: "completed",
-      sourceChain: sourceChainId,
-      destinationChain: sourceChainId,
-      amount,
-      sourceTransactionHash: receipt.hash,
-      estimatedCompletionTime: 0,
-      fee: "0",
-    };
-  }
-
-  /**
-   * Approve Circle Gateway to spend USDC
-   */
-  private async approveGatewaySpend(
-    chainId: number,
-    amount: string,
-    provider: any,
-  ): Promise<string> {
-    const usdcAddress = this.USDC_ADDRESSES[chainId];
-    const ethersProvider = new ethers.BrowserProvider(provider);
-    const signer = await ethersProvider.getSigner();
-
-    const usdcContract = new ethers.Contract(
-      usdcAddress,
-      ["function approve(address spender, uint256 amount) returns (bool)"],
-      signer,
-    );
-
-    // In production, this would be the Gateway contract address
-    const gatewayAddress = await signer.getAddress(); // Placeholder
-
-    const amountWei = ethers.parseUnits(amount, 6);
-    const tx = await usdcContract.approve(gatewayAddress, amountWei);
-    const receipt = await tx.wait();
-
-    return receipt.hash;
-  }
-
-  /**
-   * Calculate Circle Gateway fee (typically 0.1% for USDC transfers)
-   */
-  private calculateGatewayFee(amount: string): string {
-    const fee = parseFloat(amount) * 0.001; // 0.1% fee
-    return fee.toFixed(6);
-  }
-
-  /**
-   * Generate unique transfer ID
-   */
-  private generateTransferId(): string {
-    return `gw_${Date.now()}_${Math.random().toString(36).substring(7)}`;
-  }
-
-  /**
-   * Get RPC URL for chain
-   */
-  private getRpcUrl(chainId: number): string {
-    const rpcUrls: Record<number, string> = {
-      1: "https://ethereum.publicnode.com",
-      11155111: "https://ethereum-sepolia.publicnode.com",
-      8453: "https://mainnet.base.org",
-      84532: "https://sepolia.base.org",
-      42161: "https://arbitrum.publicnode.com",
-      421614: "https://arbitrum-sepolia.publicnode.com",
-      10: "https://optimism.publicnode.com",
-      11155420: "https://sepolia.optimism.io",
-      137: "https://polygon-bor.publicnode.com",
-      80002: "https://rpc-amoy.polygon.technology",
-      43114: "https://avalanche-c-chain.publicnode.com",
-      43113: "https://api.avax-test.network/ext/bc/C/rpc",
-    };
-
-    return rpcUrls[chainId] || "https://ethereum.publicnode.com";
-  }
-
-  /**
-   * Get transfer status (for tracking async cross-chain transfers)
-   */
-  async getTransferStatus(transferId: string): Promise<TransferStatus> {
-    // In production, query Circle Gateway API for status
-    // For now, return mock completed status
-    return {
-      transferId,
-      status: "completed",
-      sourceChain: 11155111,
-      destinationChain: 84532,
-      amount: "10.0",
-      estimatedCompletionTime: 0,
-    };
-  }
-
-  /**
-   * Check if cross-chain transfer is supported
-   */
-  isCrossChainSupported(
-    sourceChain: number,
-    destinationChain: number,
-  ): boolean {
-    return (
-      this.USDC_ADDRESSES[sourceChain] !== undefined &&
-      this.USDC_ADDRESSES[destinationChain] !== undefined
-    );
-  }
-
-  /**
-   * Get supported chains
-   */
-  getSupportedChains(): number[] {
-    return Object.keys(this.USDC_ADDRESSES).map(Number);
+    this.wsSubscriptions.clear();
   }
 }
 
 /**
- * Factory function to create Circle Gateway client
+ * Factory function to create Circle Arc Gateway Client with config from environment
  */
-export function createGatewayClient(
-  config?: Partial<GatewayConfig>,
-): CircleGatewayClient {
-  const defaultConfig: GatewayConfig = {
-    appId: process.env.VITE_CIRCLE_APP_ID || "cubepay-testnet",
-    apiKey: process.env.VITE_CIRCLE_API_KEY,
-    testnet: true,
+export function createArcGatewayClient(override?: Partial<CircleArcConfig>): CircleGatewayClient {
+  const config: CircleArcConfig = {
+    apiKey: process.env.VITE_CIRCLE_API_KEY || "",
+    appId: process.env.VITE_CIRCLE_APP_ID || "",
+    apiUrl:
+      process.env.VITE_ARC_GATEWAY_URL ||
+      (process.env.NODE_ENV === "production"
+        ? "https://api.circle.com/arc"
+        : "https://api-sandbox.circle.com/arc"),
+    wsUrl:
+      process.env.VITE_ARC_WEBSOCKET_URL ||
+      (process.env.NODE_ENV === "production"
+        ? "wss://api.circle.com/arc/ws"
+        : "wss://api-sandbox.circle.com/arc/ws"),
+    environment: (process.env.VITE_ARC_ENVIRONMENT || "testnet") as "testnet" | "mainnet",
+    ...override,
   };
 
-  return new CircleGatewayClient({ ...defaultConfig, ...config });
+  return new CircleGatewayClient(config);
 }
+
+export default CircleGatewayClient;
