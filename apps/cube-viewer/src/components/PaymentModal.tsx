@@ -115,14 +115,6 @@ export const PaymentModal: React.FC = () => {
   const [arcConfirmationDepth, setArcConfirmationDepth] = useState<number>(0);
   const [arcExplorerUrl, setArcExplorerUrl] = useState<string | null>(null);
 
-  // Arc Blockchain Settlement State
-  const [arcSession, setArcSession] = useState<ArcPaymentSession | null>(null);
-  const [arcSettlementStatus, setArcSettlementStatus] = useState<
-    "idle" | "monitoring" | "confirmed" | "failed"
-  >("idle");
-  const [arcConfirmationDepth, setArcConfirmationDepth] = useState<number>(0);
-  const [arcExplorerUrl, setArcExplorerUrl] = useState<string | null>(null);
-
   useEffect(() => {
     if (selectedPaymentFace === "crypto_qr" && selectedAgent) {
       // Generate QR code for agent's wallet address
@@ -307,9 +299,8 @@ export const PaymentModal: React.FC = () => {
             },
           };
 
-          const session = await arcPaymentService.initiatePayment(
-            arcPaymentRequest,
-          );
+          const session =
+            await arcPaymentService.initiatePayment(arcPaymentRequest);
           setArcSession(session);
           setArcSettlementStatus("monitoring");
 
@@ -325,27 +316,26 @@ export const PaymentModal: React.FC = () => {
           };
 
           // Subscribe to Arc settlement updates via WebSocket
-          const wsSubscription = arcPaymentService.arcClient?.subscribeToSettlementUpdates(
-            [session.circleTransferId || ""],
-            (message) => {
-              console.log("🔵 Arc Settlement Update:", message);
-              if (message.type === "blockchain:confirmation") {
-                setArcConfirmationDepth(
-                  message.data?.confirmationDepth || 0,
-                );
-                if (message.data?.confirmationDepth >= 6) {
-                  setArcSettlementStatus("confirmed");
-                  console.log(
-                    "✅ Arc Settlement Confirmed (",
-                    message.data.confirmationDepth,
-                    " blocks)",
-                  );
-                } else {
-                  setArcSettlementStatus("monitoring");
+          const wsSubscription =
+            arcPaymentService.arcClient?.subscribeToSettlementUpdates(
+              [session.circleTransferId || ""],
+              (message) => {
+                console.log("🔵 Arc Settlement Update:", message);
+                if (message.type === "blockchain:confirmation") {
+                  setArcConfirmationDepth(message.data?.confirmationDepth || 0);
+                  if (message.data?.confirmationDepth >= 6) {
+                    setArcSettlementStatus("confirmed");
+                    console.log(
+                      "✅ Arc Settlement Confirmed (",
+                      message.data.confirmationDepth,
+                      " blocks)",
+                    );
+                  } else {
+                    setArcSettlementStatus("monitoring");
+                  }
                 }
-              }
-            },
-          );
+              },
+            );
         } catch (arcError) {
           console.error("Arc payment failed:", arcError);
           setPaymentStatus("error");
