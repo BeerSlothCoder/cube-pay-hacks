@@ -1,8 +1,25 @@
 # Arc Integration Implementation Guide
 
 **Date:** February 8, 2026  
-**Status:** Planning Phase → Active Implementation  
+**Status:** ✅ Active - Arc Testnet Live for HackMoney 2026  
 **Branch:** `feature/arc-integration-complete`
+
+---
+
+## 🚀 Quick Start: Arc Testnet NOW LIVE
+
+Arc testnet is publicly available and ready for development:
+
+| Property | Value |
+|----------|-------|
+| **Chain ID** | 5042002 |
+| **RPC URL** | https://rpc.testnet.arc.network |
+| **Backup RPC** | https://rpc.blockdaemon.testnet.arc.network |
+| **Block Explorer** | https://testnet.arcscan.app |
+| **Get Testnet USDC** | https://faucet.circle.com/ |
+| **Add to MetaMask** | Via ChainList at https://chainlist.org (search "Arc Testnet") |
+| **Currency** | USDC (6 decimals native) |
+| **Finality** | < 350ms (sub-second) |
 
 ---
 

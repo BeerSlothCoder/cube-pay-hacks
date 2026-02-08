@@ -141,6 +141,53 @@
       "notes": "Mainnet - Avalanche C-Chain"
     }
   },
+  "arc": {
+    "settlement": {
+      "5042002": {
+        "name": "Arc Testnet",
+        "chainId": 5042002,
+        "chainName": "arc-testnet",
+        "type": "settlement-hub",
+        "usdc": "0x0000000000000000000000000000000000000000",
+        "decimals": 6,
+        "nativeCurrency": "USDC",
+        "rpc": "https://rpc.testnet.arc.network",
+        "rpcBackup1": "https://rpc.blockdaemon.testnet.arc.network",
+        "rpcBackup2": "https://rpc.drpc.testnet.arc.network",
+        "explorer": "https://testnet.arcscan.app",
+        "status": "active",
+        "verified": true,
+        "finality": "350ms",
+        "consensus": "Malachite",
+        "faucet": "https://faucet.circle.com/",
+        "notes": "Arc Testnet - Live for HackMoney 2026. Settlement hub with sub-second finality. Universal USDC chain for cross-chain routing.",
+        "features": [
+          "Sub-second finality (<350ms)",
+          "USDC denominated gas",
+          "Settlement authority for cross-chain transfers",
+          "EVM-compatible with Tendermint consensus",
+          "Public testnet - perfect for development"
+        ]
+      },
+      "1243": {
+        "name": "Arc Mainnet",
+        "chainId": 1243,
+        "chainName": "arc-mainnet",
+        "type": "settlement-hub",
+        "status": "coming-2026",
+        "verified": false,
+        "rpc": "https://rpc.arc.network",
+        "explorer": "https://arcscan.app",
+        "notes": "Arc Mainnet - Coming late 2026. Production settlement hub for cross-chain USDC routing.",
+        "features": [
+          "Production-grade finality",
+          "USDC denominated gas",
+          "Mainnet-level security and reliability",
+          "Full Circle ecosystem integration"
+        ]
+      }
+    }
+  },
   "helpers": {
     "getUSDCAddress": "function(chainId, isTestnet) { const net = isTestnet ? this.testnet : this.mainnet; return net[chainId]?.usdc; }",
     "getAllChainIds": "function(isTestnet) { const net = isTestnet ? this.testnet : this.mainnet; return Object.keys(net).map(Number); }",

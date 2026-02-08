@@ -279,11 +279,43 @@ import { BridgeKit } from '@circle-fin/bridge-kit';
 import { createWalletClient, custom } from 'viem';
 import { mainnet, base, arbitrum, optimism } from 'viem/chains';
 
-// Arc chain config (add to your chain list)
-const arcChain = {
-  id: 888888,
-  name: 'Arc',
-  network: 'arc',
+// Arc testnet chain config (add to your chain list)
+// Manual MetaMask Setup:
+// 1. Open MetaMask → Networks → Add network → Add manually
+// 2. Enter:
+//    Network Name: Arc Testnet
+//    RPC URL: https://rpc.testnet.arc.network
+//    Chain ID: 5042002
+//    Currency Symbol: USDC
+//    Block Explorer: https://testnet.arcscan.app
+// 3. Switch to Arc Testnet
+// 4. Get testnet USDC: https://faucet.circle.com/
+
+const arcTestnetChain = {
+  id: 5042002,
+  name: 'Arc Testnet',
+  network: 'arc-testnet',
+  nativeCurrency: {
+    decimals: 6,
+    name: 'USDC',
+    symbol: 'USDC',
+  },
+  rpcUrls: {
+    default: { http: ['https://rpc.testnet.arc.network'] },
+    public: { http: ['https://rpc.testnet.arc.network'] },
+    blockdaemon: { http: ['https://rpc.blockdaemon.testnet.arc.network'] },
+    drpc: { http: ['https://rpc.drpc.testnet.arc.network'] },
+  },
+  blockExplorers: {
+    default: { name: 'Arc Testnet Explorer', url: 'https://testnet.arcscan.app' },
+  },
+};
+
+// Arc Mainnet (coming 2026)
+const arcMainnetChain = {
+  id: 1243, // Likely (TBD)
+  name: 'Arc Mainnet',
+  network: 'arc-mainnet',
   nativeCurrency: {
     decimals: 6,
     name: 'USDC',
@@ -294,7 +326,7 @@ const arcChain = {
     public: { http: ['https://rpc.arc.network'] },
   },
   blockExplorers: {
-    default: { name: 'Arc Explorer', url: 'https://explorer.arc.network' },
+    default: { name: 'Arc Explorer', url: 'https://arcscan.app' },
   },
 };
 
@@ -599,9 +631,12 @@ https://console.circle.com/signup
 
 ### 2. Get Arc Testnet USDC
 
-```
-https://faucet.circle.com/
-```
+1. Go to: https://faucet.circle.com/
+2. Connect MetaMask (make sure you're on Arc Testnet)
+3. Request testnet USDC
+4. Daily limit: Usually 100-1000 USDC testnet
+
+**Note:** If you get "Could not fetch chain ID", your RPC URL is wrong. Use: https://rpc.testnet.arc.network
 
 ### 3. Install Bridge Kit
 
@@ -611,31 +646,99 @@ npm install @circle-fin/bridge-kit viem
 
 ### 4. Configure Arc Network in MetaMask
 
-- Network Name: Arc Testnet
-- RPC URL: https://testnet-rpc.arc.network
-- Chain ID: 888888
-- Currency Symbol: USDC
-- Block Explorer: https://testnet-explorer.arc.network
+**Option A: One-Click Add (Recommended)**
 
-### 5. Test Simple Transfer
+1. Go to **ChainList**: https://chainlist.org
+2. Search "Arc Testnet"
+3. Click "Add to MetaMask"
+4. MetaMask approves → Arc Testnet added and active
+
+**Option B: Manual Setup**
+
+1. Open MetaMask → Networks (top dropdown) → Add network → Add manually
+2. Enter details:
+   - **Network Name:** Arc Testnet
+   - **RPC URL:** https://rpc.testnet.arc.network
+   - **Chain ID:** 5042002
+   - **Currency Symbol:** USDC
+   - **Block Explorer URL:** https://testnet.arcscan.app
+3. Save → MetaMask switches to Arc Testnet
+
+**Alternative RPC URLs** (if primary is slow):
+- https://rpc.blockdaemon.testnet.arc.network
+- https://rpc.drpc.testnet.arc.network
+
+**Verify it's working:**
+- Switch to Arc Testnet in MetaMask
+- Check balance shows USDC as currency
+- Visit https://testnet.arcscan.app → confirm your address matches MetaMask
+
+### 5. Test Simple Transfer (Bridge Kit + Arc Testnet)
 
 ```typescript
 import { BridgeKit } from '@circle-fin/bridge-kit';
+import { createWalletClient, custom } from 'viem';
+
+// Initialize with Arc testnet
+const walletClient = createWalletClient({
+  chain: {
+    id: 5042002,
+    name: 'Arc Testnet',
+    rpcUrls: { default: { http: ['https://rpc.testnet.arc.network'] } },
+    nativeCurrency: { name: 'USDC', symbol: 'USDC', decimals: 6 },
+  },
+  transport: custom(window.ethereum)
+});
 
 const kit = new BridgeKit();
 
+// Transfer from Ethereum Sepolia to Arc Testnet
 const result = await kit.bridge({
-  from: { adapter: viemAdapter, chain: "Ethereum Sepolia" },
-  to: { adapter: viemAdapter, chain: "Arc Testnet" },
+  from: { 
+    adapter: viemAdapter, 
+    chain: "Ethereum Sepolia",  // Source
+    address: userAddress,
+  },
+  to: { 
+    adapter: viemAdapter, 
+    chain: "Arc Testnet",  // Arc as settlement hub
+    address: merchantAddress,
+  },
   amount: "10.00",
 });
 
 console.log('Arc TX:', result.txHash);
+console.log('View on Arc Explorer:', `https://testnet.arcscan.app/tx/${result.txHash}`);
 ```
 
 ### 6. Integrate into CubePay
 
-Replace Chainlink CCIP calls with Bridge Kit + Arc two-hop flow.
+Replace Chainlink CCIP calls with Bridge Kit + Arc two-hop flow:
+
+```typescript
+// CubePay Payment Integration
+import { processCrossChainPayment } from './arcPaymentService';
+
+const paymentResult = await processCrossChainPayment({
+  userAddress: "0x...",
+  merchantAddress: "0x...",
+  amount: "50.00", // USDC
+  sourceChain: "Ethereum Sepolia",
+  destinationChain: "Base Sepolia",
+  // Route: Ethereum Sepolia → Arc Testnet (settlement) → Base Sepolia
+});
+
+console.log(`Settled in ${paymentResult.totalTime}ms`);
+console.log(`Arc Settlement: ${paymentResult.arcExplorerUrl}`);
+console.log(`Final Transfer: ${paymentResult.destExplorerUrl}`);
+```
+
+**Updated flow:**
+1. User initiates payment on terminal
+2. QR code generated with Arc settlement params
+3. MetaMask signs transaction (no manual chain switching needed!)
+4. Funds routed: Source → Arc Testnet (< 350ms finality) → Destination
+5. Payment confirmed in AR interface
 
 ### 7. Join Community for Support
 
