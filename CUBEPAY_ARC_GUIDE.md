@@ -24,6 +24,7 @@
 ### Arc = Separate Layer-1 Blockchain (NOT just a liquidity layer)
 
 **Arc Blockchain Specs:**
+
 - **Type:** EVM-compatible Layer-1 blockchain
 - **Builder:** Circle (USDC issuer)
 - **Purpose:** Settlement and payment infrastructure
@@ -33,6 +34,7 @@
 - **Status:** Testnet live, mainnet beta 2026
 
 **Think of Arc as:**
+
 > Ethereum/Solana/Base → General purpose blockchains  
 > Arc → Specialized payment settlement blockchain
 
@@ -51,6 +53,7 @@ EVM Chains (Ethereum, Base, Arbitrum, Polygon, etc.)
 ```
 
 **Key Products:**
+
 1. **Arc Blockchain** - L1 network for settlement
 2. **Bridge Kit** - SDK for cross-chain transfers
 3. **CCTP** - Protocol for USDC burn/mint (built into Bridge Kit)
@@ -69,20 +72,24 @@ EVM Chains (Ethereum, Base, Arbitrum, Polygon, etc.)
 Build apps that treat multiple chains as one liquidity surface, using Arc to move USDC wherever it's needed. Projects should demonstrate how capital can be sourced, routed, and settled across chains without fragmenting user experience.
 
 **What judges want:**
+
 - ✅ Crosschain payments, credit, or treasury systems
 - ✅ Applications that are not locked to a single chain
 - ✅ Seamless user experience despite crosschain complexity
 
 **REQUIRED Tools:**
+
 - Arc blockchain
 - USDC
 
 **RECOMMENDED Tools:**
+
 - Circle Wallets (optional - you can use MetaMask)
 - Circle Gateway (optional)
 - Bridge Kit (should use this)
 
 **Qualification Requirements:**
+
 - [ ] Functional MVP (frontend + backend)
 - [ ] Architecture diagram
 - [ ] Product feedback for Circle tools
@@ -91,6 +98,7 @@ Build apps that treat multiple chains as one liquidity surface, using Arc to mov
 - [ ] GitHub/Replit repo
 
 **Why CubePay is Perfect:**
+
 - ✅ Already doing crosschain payments (merchant on Chain A, user on Chain B)
 - ✅ Not locked to single chain (multi-EVM support)
 - ✅ Seamless UX (AR terminal abstracts complexity)
@@ -115,8 +123,9 @@ Arc is BOTH:
 **A:** Arc is a **transit/settlement layer**, not permanent storage.
 
 **Flow:**
+
 ```
-User (Ethereum) 
+User (Ethereum)
   → Bridge to Arc (instant settlement)
   → Bridge to Merchant (Base)
 
@@ -133,6 +142,7 @@ You don't "bridge all to Arc and stay there" - you route **through** Arc.
 **A:** **NO** - Bridge Kit works with existing MetaMask wallets via Viem/Ethers adapters.
 
 **Circle Wallets are optional** - only use if you want:
+
 - Programmable wallet infrastructure
 - Social login/recovery
 - Developer-controlled wallets
@@ -160,13 +170,13 @@ Result: Replaces Chainlink CCIP completely
 
 **Comparison:**
 
-| Feature | Chainlink CCIP | Bridge Kit + Arc |
-|---------|---------------|------------------|
-| Asset support | Multiple tokens | USDC-optimized |
-| Cost | Oracle fees | Lower (native) |
-| Speed | Variable | <2 seconds via Arc |
-| Integration | Simple SDK | Simple SDK |
-| Settlement | Multi-hop | Arc hub (instant) |
+| Feature       | Chainlink CCIP  | Bridge Kit + Arc   |
+| ------------- | --------------- | ------------------ |
+| Asset support | Multiple tokens | USDC-optimized     |
+| Cost          | Oracle fees     | Lower (native)     |
+| Speed         | Variable        | <2 seconds via Arc |
+| Integration   | Simple SDK      | Simple SDK         |
+| Settlement    | Multi-hop       | Arc hub (instant)  |
 
 ---
 
@@ -275,9 +285,9 @@ npm install @circle-fin/bridge-kit viem
 ### Step 2: Basic Bridge Kit Setup
 
 ```typescript
-import { BridgeKit } from '@circle-fin/bridge-kit';
-import { createWalletClient, custom } from 'viem';
-import { mainnet, base, arbitrum, optimism } from 'viem/chains';
+import { BridgeKit } from "@circle-fin/bridge-kit";
+import { createWalletClient, custom } from "viem";
+import { mainnet, base, arbitrum, optimism } from "viem/chains";
 
 // Arc testnet chain config (add to your chain list)
 // Manual MetaMask Setup:
@@ -293,40 +303,43 @@ import { mainnet, base, arbitrum, optimism } from 'viem/chains';
 
 const arcTestnetChain = {
   id: 5042002,
-  name: 'Arc Testnet',
-  network: 'arc-testnet',
+  name: "Arc Testnet",
+  network: "arc-testnet",
   nativeCurrency: {
     decimals: 6,
-    name: 'USDC',
-    symbol: 'USDC',
+    name: "USDC",
+    symbol: "USDC",
   },
   rpcUrls: {
-    default: { http: ['https://rpc.testnet.arc.network'] },
-    public: { http: ['https://rpc.testnet.arc.network'] },
-    blockdaemon: { http: ['https://rpc.blockdaemon.testnet.arc.network'] },
-    drpc: { http: ['https://rpc.drpc.testnet.arc.network'] },
+    default: { http: ["https://rpc.testnet.arc.network"] },
+    public: { http: ["https://rpc.testnet.arc.network"] },
+    blockdaemon: { http: ["https://rpc.blockdaemon.testnet.arc.network"] },
+    drpc: { http: ["https://rpc.drpc.testnet.arc.network"] },
   },
   blockExplorers: {
-    default: { name: 'Arc Testnet Explorer', url: 'https://testnet.arcscan.app' },
+    default: {
+      name: "Arc Testnet Explorer",
+      url: "https://testnet.arcscan.app",
+    },
   },
 };
 
 // Arc Mainnet (coming 2026)
 const arcMainnetChain = {
   id: 1243, // Likely (TBD)
-  name: 'Arc Mainnet',
-  network: 'arc-mainnet',
+  name: "Arc Mainnet",
+  network: "arc-mainnet",
   nativeCurrency: {
     decimals: 6,
-    name: 'USDC',
-    symbol: 'USDC',
+    name: "USDC",
+    symbol: "USDC",
   },
   rpcUrls: {
-    default: { http: ['https://rpc.arc.network'] },
-    public: { http: ['https://rpc.arc.network'] },
+    default: { http: ["https://rpc.arc.network"] },
+    public: { http: ["https://rpc.arc.network"] },
   },
   blockExplorers: {
-    default: { name: 'Arc Explorer', url: 'https://arcscan.app' },
+    default: { name: "Arc Explorer", url: "https://arcscan.app" },
   },
 };
 
@@ -357,14 +370,16 @@ interface PaymentResult {
 }
 
 async function processCrossChainPayment(
-  params: PaymentParams
+  params: PaymentParams,
 ): Promise<PaymentResult> {
   const startTime = Date.now();
-  
+
   try {
     // Step 1: User chain → Arc (settlement)
-    console.log(`Bridging ${params.amount} USDC from ${params.sourceChain} to Arc...`);
-    
+    console.log(
+      `Bridging ${params.amount} USDC from ${params.sourceChain} to Arc...`,
+    );
+
     const toArcTx = await bridgeKit.bridge({
       from: {
         adapter: viemAdapter,
@@ -380,10 +395,10 @@ async function processCrossChainPayment(
     });
 
     console.log(`Arc settlement complete: ${toArcTx.txHash}`);
-    
+
     // Step 2: Arc → Merchant's destination chain
     console.log(`Bridging from Arc to ${params.destinationChain}...`);
-    
+
     const toDestTx = await bridgeKit.bridge({
       from: {
         adapter: viemAdapter,
@@ -399,9 +414,9 @@ async function processCrossChainPayment(
     });
 
     console.log(`Final transfer complete: ${toDestTx.txHash}`);
-    
+
     const totalTime = Date.now() - startTime;
-    
+
     return {
       success: true,
       arcTxHash: toArcTx.txHash,
@@ -410,20 +425,19 @@ async function processCrossChainPayment(
       destExplorerUrl: getExplorerUrl(params.destinationChain, toDestTx.txHash),
       totalTime,
     };
-    
   } catch (error) {
-    console.error('Payment failed:', error);
+    console.error("Payment failed:", error);
     throw error;
   }
 }
 
 function getExplorerUrl(chain: string, txHash: string): string {
   const explorers: Record<string, string> = {
-    Ethereum: 'https://etherscan.io',
-    Base: 'https://basescan.org',
-    Arbitrum: 'https://arbiscan.io',
-    Optimism: 'https://optimistic.etherscan.io',
-    Polygon: 'https://polygonscan.com',
+    Ethereum: "https://etherscan.io",
+    Base: "https://basescan.org",
+    Arbitrum: "https://arbiscan.io",
+    Optimism: "https://optimistic.etherscan.io",
+    Polygon: "https://polygonscan.com",
   };
   return `${explorers[chain]}/tx/${txHash}`;
 }
@@ -443,21 +457,21 @@ function CubePayPaymentForm({ merchantAddress, merchantChain }: PaymentFormProps
   const [amount, setAmount] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<PaymentResult | null>(null);
-  
+
   const handlePayment = async () => {
     setLoading(true);
-    
+
     try {
-      const accounts = await window.ethereum.request({ 
-        method: 'eth_requestAccounts' 
+      const accounts = await window.ethereum.request({
+        method: 'eth_requestAccounts'
       });
       const userAddress = accounts[0];
-      
-      const chainId = await window.ethereum.request({ 
-        method: 'eth_chainId' 
+
+      const chainId = await window.ethereum.request({
+        method: 'eth_chainId'
       });
       const sourceChain = getChainName(chainId);
-      
+
       const paymentResult = await processCrossChainPayment({
         userAddress,
         merchantAddress,
@@ -465,10 +479,10 @@ function CubePayPaymentForm({ merchantAddress, merchantChain }: PaymentFormProps
         sourceChain,
         destinationChain: merchantChain,
       });
-      
+
       setResult(paymentResult);
       showARSuccessAnimation(paymentResult);
-      
+
     } catch (error) {
       console.error('Payment error:', error);
       alert('Payment failed. Please try again.');
@@ -476,11 +490,11 @@ function CubePayPaymentForm({ merchantAddress, merchantChain }: PaymentFormProps
       setLoading(false);
     }
   };
-  
+
   return (
     <div className="payment-form">
       <h3>Pay with USDC (Any Chain)</h3>
-      
+
       <input
         type="number"
         value={amount}
@@ -488,14 +502,14 @@ function CubePayPaymentForm({ merchantAddress, merchantChain }: PaymentFormProps
         placeholder="Amount (USDC)"
         disabled={loading}
       />
-      
-      <button 
+
+      <button
         onClick={handlePayment}
         disabled={loading || !amount}
       >
         {loading ? 'Processing via Arc...' : 'Pay Now'}
       </button>
-      
+
       {result && (
         <div className="payment-success">
           <h4>✅ Payment Successful!</h4>
@@ -531,7 +545,7 @@ function getChainName(chainId: string): string {
 ### Before (Chainlink CCIP)
 
 ```typescript
-import { CCIPRouter } from '@chainlink/ccip';
+import { CCIPRouter } from "@chainlink/ccip";
 
 const router = new CCIPRouter(routerAddress);
 
@@ -539,22 +553,24 @@ await router.ccipSend(
   destinationChainSelector,
   {
     receiver: merchantAddress,
-    data: '0x',
-    tokenAmounts: [{
-      token: usdcAddress,
-      amount: ethers.utils.parseUnits(amount, 6),
-    }],
+    data: "0x",
+    tokenAmounts: [
+      {
+        token: usdcAddress,
+        amount: ethers.utils.parseUnits(amount, 6),
+      },
+    ],
     feeToken: linkToken,
-    extraArgs: '0x',
+    extraArgs: "0x",
   },
-  { value: fees }
+  { value: fees },
 );
 ```
 
 ### After (Bridge Kit + Arc)
 
 ```typescript
-import { BridgeKit } from '@circle-fin/bridge-kit';
+import { BridgeKit } from "@circle-fin/bridge-kit";
 
 const bridgeKit = new BridgeKit();
 
@@ -665,10 +681,12 @@ npm install @circle-fin/bridge-kit viem
 3. Save → MetaMask switches to Arc Testnet
 
 **Alternative RPC URLs** (if primary is slow):
+
 - https://rpc.blockdaemon.testnet.arc.network
 - https://rpc.drpc.testnet.arc.network
 
 **Verify it's working:**
+
 - Switch to Arc Testnet in MetaMask
 - Check balance shows USDC as currency
 - Visit https://testnet.arcscan.app → confirm your address matches MetaMask
@@ -676,39 +694,42 @@ npm install @circle-fin/bridge-kit viem
 ### 5. Test Simple Transfer (Bridge Kit + Arc Testnet)
 
 ```typescript
-import { BridgeKit } from '@circle-fin/bridge-kit';
-import { createWalletClient, custom } from 'viem';
+import { BridgeKit } from "@circle-fin/bridge-kit";
+import { createWalletClient, custom } from "viem";
 
 // Initialize with Arc testnet
 const walletClient = createWalletClient({
   chain: {
     id: 5042002,
-    name: 'Arc Testnet',
-    rpcUrls: { default: { http: ['https://rpc.testnet.arc.network'] } },
-    nativeCurrency: { name: 'USDC', symbol: 'USDC', decimals: 6 },
+    name: "Arc Testnet",
+    rpcUrls: { default: { http: ["https://rpc.testnet.arc.network"] } },
+    nativeCurrency: { name: "USDC", symbol: "USDC", decimals: 6 },
   },
-  transport: custom(window.ethereum)
+  transport: custom(window.ethereum),
 });
 
 const kit = new BridgeKit();
 
 // Transfer from Ethereum Sepolia to Arc Testnet
 const result = await kit.bridge({
-  from: { 
-    adapter: viemAdapter, 
-    chain: "Ethereum Sepolia",  // Source
+  from: {
+    adapter: viemAdapter,
+    chain: "Ethereum Sepolia", // Source
     address: userAddress,
   },
-  to: { 
-    adapter: viemAdapter, 
-    chain: "Arc Testnet",  // Arc as settlement hub
+  to: {
+    adapter: viemAdapter,
+    chain: "Arc Testnet", // Arc as settlement hub
     address: merchantAddress,
   },
   amount: "10.00",
 });
 
-console.log('Arc TX:', result.txHash);
-console.log('View on Arc Explorer:', `https://testnet.arcscan.app/tx/${result.txHash}`);
+console.log("Arc TX:", result.txHash);
+console.log(
+  "View on Arc Explorer:",
+  `https://testnet.arcscan.app/tx/${result.txHash}`,
+);
 ```
 
 ### 6. Integrate into CubePay
@@ -717,7 +738,7 @@ Replace Chainlink CCIP calls with Bridge Kit + Arc two-hop flow:
 
 ```typescript
 // CubePay Payment Integration
-import { processCrossChainPayment } from './arcPaymentService';
+import { processCrossChainPayment } from "./arcPaymentService";
 
 const paymentResult = await processCrossChainPayment({
   userAddress: "0x...",
@@ -734,6 +755,7 @@ console.log(`Final Transfer: ${paymentResult.destExplorerUrl}`);
 ```
 
 **Updated flow:**
+
 1. User initiates payment on terminal
 2. QR code generated with Arc settlement params
 3. MetaMask signs transaction (no manual chain switching needed!)

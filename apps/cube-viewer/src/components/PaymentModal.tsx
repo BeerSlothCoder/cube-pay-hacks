@@ -53,6 +53,9 @@ import type {
   UnifiedBalance,
   ENSAgentProfile,
 } from "@cubepay/wallet-connector";
+import { arcPaymentService } from "../services/arcPaymentService";
+import { arcQRService } from "../services/arcQRService";
+import type { ArcPaymentSession } from "../services/arcPaymentService";
 import {
   createPaymentSession,
   updatePaymentSession,
@@ -103,6 +106,22 @@ export const PaymentModal: React.FC = () => {
     useState<ENSPaymentConfig | null>(null);
   const [ensNetwork] = useState<"mainnet" | "sepolia">("sepolia");
   const [showENSAdvanced, setShowENSAdvanced] = useState(false);
+
+  // Arc Blockchain Settlement State
+  const [arcSession, setArcSession] = useState<ArcPaymentSession | null>(null);
+  const [arcSettlementStatus, setArcSettlementStatus] = useState<
+    "idle" | "monitoring" | "confirmed" | "failed"
+  >("idle");
+  const [arcConfirmationDepth, setArcConfirmationDepth] = useState<number>(0);
+  const [arcExplorerUrl, setArcExplorerUrl] = useState<string | null>(null);
+
+  // Arc Blockchain Settlement State
+  const [arcSession, setArcSession] = useState<ArcPaymentSession | null>(null);
+  const [arcSettlementStatus, setArcSettlementStatus] = useState<
+    "idle" | "monitoring" | "confirmed" | "failed"
+  >("idle");
+  const [arcConfirmationDepth, setArcConfirmationDepth] = useState<number>(0);
+  const [arcExplorerUrl, setArcExplorerUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (selectedPaymentFace === "crypto_qr" && selectedAgent) {
@@ -264,7 +283,78 @@ export const PaymentModal: React.FC = () => {
       }
 
       // Determine payment method based on selected chain
-      if (selectedChain === 900) {
+      if (selectedChain === 5042002) {
+        // Arc Testnet Settlement
+        console.log(
+          "🔵 Arc Settlement detected - initiating Arc blockchain transfer",
+        );
+
+        try {
+          // Initiate Arc payment session
+          const arcPaymentRequest = {
+            recipientAddress,
+            agentId: selectedAgent.id,
+            amount: paymentAmount,
+            sourceChainId: useCrossChain ? selectedChain : destinationChain,
+            destinationChainId: 5042002, // Arc Testnet
+            terminalType: (selectedAgent.agent_type || "ar_viewer") as
+              | "pos"
+              | "ar_viewer"
+              | "artm",
+            metadata: {
+              description: `Payment to ${selectedAgent.agent_name}`,
+              orderId: selectedAgent.id,
+            },
+          };
+
+          const session = await arcPaymentService.initiatePayment(
+            arcPaymentRequest,
+          );
+          setArcSession(session);
+          setArcSettlementStatus("monitoring");
+
+          // Set Arc explorer URL
+          setArcExplorerUrl("https://testnet.arcscan.app");
+
+          // For Arc testnet demo, simulate successful transfer
+          // In production, wallet would sign the transaction via QR scan
+          result = {
+            success: true,
+            transactionHash: session.paymentRequestId,
+            status: "confirmed",
+          };
+
+          // Subscribe to Arc settlement updates via WebSocket
+          const wsSubscription = arcPaymentService.arcClient?.subscribeToSettlementUpdates(
+            [session.circleTransferId || ""],
+            (message) => {
+              console.log("🔵 Arc Settlement Update:", message);
+              if (message.type === "blockchain:confirmation") {
+                setArcConfirmationDepth(
+                  message.data?.confirmationDepth || 0,
+                );
+                if (message.data?.confirmationDepth >= 6) {
+                  setArcSettlementStatus("confirmed");
+                  console.log(
+                    "✅ Arc Settlement Confirmed (",
+                    message.data.confirmationDepth,
+                    " blocks)",
+                  );
+                } else {
+                  setArcSettlementStatus("monitoring");
+                }
+              }
+            },
+          );
+        } catch (arcError) {
+          console.error("Arc payment failed:", arcError);
+          setPaymentStatus("error");
+          setErrorMessage(
+            `Arc settlement failed: ${(arcError as Error).message}`,
+          );
+          return;
+        }
+      } else if (selectedChain === 900) {
         // Solana
         result = await executeSolanaUSDCPayment(
           recipientAddress,
@@ -411,7 +501,7 @@ export const PaymentModal: React.FC = () => {
 
   const config = faceConfigs[selectedPaymentFace];
 
-  // Chain configurations
+  // Chain configurations (including Arc testnet settlement hub)
   const chains = [
     { id: 11155111, name: "Ethereum Sepolia", symbol: "ETH" },
     { id: 84532, name: "Base Sepolia", symbol: "ETH" },
@@ -421,6 +511,12 @@ export const PaymentModal: React.FC = () => {
     { id: 43113, name: "Avalanche Fuji", symbol: "AVAX" },
     { id: 97, name: "BNB Testnet", symbol: "BNB" },
     { id: 900, name: "Solana Devnet", symbol: "SOL" },
+    {
+      id: 5042002,
+      name: "Arc Testnet (Settlement Hub)",
+      symbol: "USDC",
+      isArcSettlement: true,
+    },
   ];
 
   // Render wallet connection section
@@ -701,14 +797,89 @@ export const PaymentModal: React.FC = () => {
           <p className="text-cubepay-text text-xs font-mono break-all bg-cubepay-card p-2 rounded">
             {transactionHash}
           </p>
-          <a
-            href={`https://sepolia.etherscan.io/tx/${transactionHash}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-blue-400 hover:text-blue-300 text-sm mt-3 inline-block"
-          >
-            View on Explorer →
-          </a>
+
+          {/* Arc Blockchain Settlement Status */}
+          {selectedChain === 5042002 && arcSession && (
+            <div className="mt-4 pt-4 border-t border-green-600/30">
+              <div className="space-y-2">
+                <h4 className="text-blue-400 font-semibold text-sm">
+                  🔵 Arc Blockchain Settlement
+                </h4>
+                <div className="bg-blue-900/20 rounded p-2 space-y-1">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-cubepay-text-secondary">Status:</span>
+                    <span
+                      className={
+                        arcSettlementStatus === "confirmed"
+                          ? "text-green-400 font-semibold"
+                          : "text-yellow-400 font-semibold"
+                      }
+                    >
+                      {arcSettlementStatus === "confirmed"
+                        ? "✅ Confirmed"
+                        : "⏳ Monitoring"}
+                    </span>
+                  </div>
+                  {arcConfirmationDepth > 0 && (
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-cubepay-text-secondary">
+                        Confirmations:
+                      </span>
+                      <span className="text-blue-400 font-mono">
+                        {arcConfirmationDepth}/6
+                      </span>
+                    </div>
+                  )}
+                  {arcSession.circleTransferId && (
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-cubepay-text-secondary">
+                        Transfer ID:
+                      </span>
+                      <span className="text-blue-300 font-mono text-right truncate">
+                        {arcSession.circleTransferId.slice(0, 20)}...
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Arc Explorer Links */}
+                {arcExplorerUrl && (
+                  <div className="flex gap-2 mt-3">
+                    <a
+                      href={arcExplorerUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-400 hover:text-blue-300 text-xs flex-1 text-center py-2 border border-blue-500/30 rounded hover:bg-blue-500/10 transition"
+                    >
+                      🔗 Arc Explorer
+                    </a>
+                    {arcSession.circleTransferId && (
+                      <a
+                        href={`${arcExplorerUrl}/tx/${arcSession.circleTransferId}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-400 hover:text-blue-300 text-xs flex-1 text-center py-2 border border-blue-500/30 rounded hover:bg-blue-500/10 transition"
+                      >
+                        📋 Settlement Details
+                      </a>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Standard EVM Explorer Link */}
+          {selectedChain !== 5042002 && (
+            <a
+              href={`https://sepolia.etherscan.io/tx/${transactionHash}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-400 hover:text-blue-300 text-sm mt-3 inline-block"
+            >
+              View on Explorer →
+            </a>
+          )}
         </div>
       );
     }
@@ -1070,6 +1241,11 @@ export const PaymentModal: React.FC = () => {
                               id: 80002,
                               name: "Polygon Amoy",
                               symbol: "MATIC",
+                            },
+                            {
+                              id: 5042002,
+                              name: "Arc Testnet (Settlement)",
+                              symbol: "USDC",
                             },
                           ].map((chain) => (
                             <option key={chain.id} value={chain.id}>

@@ -10,16 +10,16 @@
 
 Arc testnet is publicly available and ready for development:
 
-| Property | Value |
-|----------|-------|
-| **Chain ID** | 5042002 |
-| **RPC URL** | https://rpc.testnet.arc.network |
-| **Backup RPC** | https://rpc.blockdaemon.testnet.arc.network |
-| **Block Explorer** | https://testnet.arcscan.app |
-| **Get Testnet USDC** | https://faucet.circle.com/ |
-| **Add to MetaMask** | Via ChainList at https://chainlist.org (search "Arc Testnet") |
-| **Currency** | USDC (6 decimals native) |
-| **Finality** | < 350ms (sub-second) |
+| Property             | Value                                                         |
+| -------------------- | ------------------------------------------------------------- |
+| **Chain ID**         | 5042002                                                       |
+| **RPC URL**          | https://rpc.testnet.arc.network                               |
+| **Backup RPC**       | https://rpc.blockdaemon.testnet.arc.network                   |
+| **Block Explorer**   | https://testnet.arcscan.app                                   |
+| **Get Testnet USDC** | https://faucet.circle.com/                                    |
+| **Add to MetaMask**  | Via ChainList at https://chainlist.org (search "Arc Testnet") |
+| **Currency**         | USDC (6 decimals native)                                      |
+| **Finality**         | < 350ms (sub-second)                                          |
 
 ---
 
