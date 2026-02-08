@@ -8,48 +8,216 @@
 
 ## Executive Summary
 
-This guide consolidates the technical architecture, use cases, and implementation roadmap for replacing Chainlink CCIP with Circle's Arc Gateway (powered by CCTP) across CubePay. This includes payment flows for POS, MyTerminal/AR Viewer, and ARTM (virtual ATM) terminal types.
+This guide consolidates the technical architecture, use cases, and implementation roadmap for integrating **Circle's complete Arc Blockchain ecosystem** (Arc Blockchain + CCTP Protocol + Arc Gateway) to replace Chainlink CCIP across CubePay. This includes payment flows for POS, MyTerminal/AR Viewer, and ARTM (virtual ATM) terminal types.
+
+**Arc Ecosystem Architecture:**
+
+- **Arc Blockchain** - Circle's settlement & liquidity hub layer (orchestrates all transfers)
+- **CCTP** - Cross-Chain Transfer Protocol (burn/mint mechanics on source/destination chains)
+- **Arc Gateway** - High-level chain abstraction product (simplifies UX & routing)
 
 **Key Goals:**
-1. ✅ Replace CCIP cross-chain infrastructure with Arc/CCTP
-2. ✅ Enable unified USDC balance across 12 chains
-3. ✅ Deliver <30 second cross-chain settlements
-4. ✅ Support 3 terminal types: POS, AR Viewer, ARTM
-5. ✅ Implement 0.1% configurable fee model
-6. ✅ Track Arc usage via `payment_sessions.arc_*` metadata
+
+1. ✅ Replace CCIP with Arc Blockchain infrastructure (full ecosystem)
+2. ✅ Integrate Arc Blockchain as central settlement authority
+3. ✅ Implement CCTP for cross-chain USDC burn/mint mechanics
+4. ✅ Deploy Arc Gateway for universal chain abstraction
+5. ✅ Enable unified USDC balance across 12 chains
+6. ✅ Deliver <30 second cross-chain settlements
+7. ✅ Support 3 terminal types: POS, AR Viewer, ARTM
+8. ✅ Implement 0.1% configurable fee model
+9. ✅ Track Arc Blockchain transactions via `payment_sessions.arc_*` metadata
+10. ✅ Monitor Arc Blockchain settlement confirmations
 
 ---
 
-## 1. Architecture Comparison: CCIP vs Arc/CCTP/Gateway
+## 1. Arc Blockchain Ecosystem (Complete Architecture)
+
+### The Three Layers of Arc Integration
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  User Applications (CubePay: POS, AR Viewer, ARTM)              │
+├─────────────────────────────────────────────────────────────────┤
+│  Arc Gateway (UX Layer)                                         │
+│  - Automatic chain detection                                    │
+│  - Unified balance queries                                      │
+│  - Fee estimation & routing                                     │
+├─────────────────────────────────────────────────────────────────┤
+│  CCTP Protocol (Mechanics Layer)                                │
+│  - Burn USDC on source chain                                    │
+│  - Mint USDC on destination chain                               │
+│  - Circle attestation verification                              │
+├─────────────────────────────────────────────────────────────────┤
+│  Arc Blockchain (Settlement & Liquidity Hub)                    │
+│  - Central settlement authority                                 │
+│  - Liquidity management across 12 chains                        │
+│  - Transaction orchestration & confirmation                     │
+│  - Real-time balance validation                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Arc Blockchain: Central Settlement Layer
+
+**What is Arc Blockchain?**
+Arc Blockchain is Circle's proprietary settlement network that:
+
+- Acts as the **liquidity hub** connecting all supported chains
+- Maintains authoritative settlement records for all transfers
+- Guarantees liquidity availability (Circle-backed reserves)
+- Provides deterministic settlement (no multi-sig delays)
+- Validates transactions across all 12 chains
+
+**Arc Blockchain Role in Transfers:**
+
+```
+User initiates transfer (Source Chain)
+         ↓
+Arc Gateway validates request
+         ↓
+Arc Blockchain receives transfer request
+         ↓
+Arc verifies liquidity availability
+         ↓
+Arc Blockchain executes settlement
+         ↓
+CCTP burns USDC on source chain
+         ↓
+Arc Blockchain confirms burn
+         ↓
+CCTP mints USDC on destination chain
+         ↓
+Arc Blockchain validates destination mint
+         ↓
+Settlement complete (<500ms - 30s)
+  ↓
+Arc Blockchain broadcasts confirmation
+  ↓
+payment_sessions updated with arc_blockchain_tx_hash
+```
+
+---
+
+## 1.1 Architecture Comparison: CCIP vs Complete Arc Ecosystem
 
 ### Current State: Chainlink CCIP
 
-| Component | Details |
-|-----------|---------|
-| **Router** | Chainlink's ccipRouter contract on each chain |
-| **Lanes** | Pre-configured routes between specific chain pairs |
-| **Fee Model** | LINK-based gas + premium fees |
-| **Trust Model** | Chainlink's DON (Decentralized Oracle Network) |
-| **UX** | Multiple steps, manual chain selection |
-| **Settlement** | 10-30 minutes typical |
+| Component         | Details                                                     |
+| ----------------- | ----------------------------------------------------------- |
+| **Router**        | Chainlink's ccipRouter contract on each chain               |
+| **Lanes**         | Pre-configured routes between specific chain pairs          |
+| **Fee Model**     | LINK-based gas + premium fees                               |
+| **Trust Model**   | Chainlink's DON (Decentralized Oracle Network)              |
+| **UX**            | Multiple steps, manual chain selection                      |
+| **Settlement**    | 10-30 minutes typical                                       |
 | **Code Location** | `src/services/ccipConfigService.js` + `dynamicQRService.js` |
 
 **Code References:**
+
 - `src/config/ccip-config-consolidated.json` - USDC address mappings
 - `src/services/dynamicQRService.js` - MetaMask EIP-681 QR generation
 - `src/services/ccipConfigService.js` - Fee estimation & transaction building
 
-### Target State: Circle Arc/CCTP/Gateway
+### Target State: Complete Circle Arc Ecosystem
 
-| Component | Details |
-|-----------|---------|
-| **Gateway** | Circle's chain abstraction product layer |
-| **Protocol** | CCTP (Cross-Chain Transfer Protocol) |
-| **Fee Model** | 0.1% gateway fee (configurable) + gas costs |
-| **Trust Model** | Circle attestation + liquidity guarantees |
-| **UX** | 2 clicks, automatic chain detection |
-| **Settlement** | <500ms to <30 seconds |
-| **Code Location** | `packages/wallet-connector/src/circleGateway.ts` |
+| Component         | Details                                                |
+| ----------------- | ------------------------------------------------------ |
+| **Settlement**    | Arc Blockchain (Circle's proprietary settlement layer) |
+| **Protocol**      | CCTP (Cross-Chain Transfer Protocol)                   |
+| **Gateway**       | Arc Gateway (chain abstraction orchestration)          |
+| **Fee Model**     | 0.1% gateway fee (configurable) + Arc settlement costs |
+| **Trust Model**   | Circle attestation + Arc Blockchain guarantees         |
+| **Liquidity**     | Circle-backed reserves on Arc Blockchain               |
+| **UX**            | 2 clicks, automatic chain & Arc hub detection          |
+| **Settlement**    | <500ms to <30 seconds (Arc-mediated)                   |
+| **Confirmations** | Arc Blockchain consensus + destination chain confirms  |
+| **Code Location** | `packages/wallet-connector/src/arcBlockchain.ts` (NEW) |
+
+---
+
+## 1.2 Arc Blockchain Integration Points
+
+### Arc Blockchain APIs & SDKs
+
+**Circle provides three-tier Arc integration:**
+
+```
+Tier 1: Arc REST API (Synchronous queries)
+- GET /arc/settlement/{transferId}
+- GET /arc/liquidity/{sourceChain}/{destChain}
+- POST /arc/settlement/initiate
+- GET /arc/attestation/{burnProofHash}
+
+Tier 2: Arc WebSocket API (Real-time events)
+- subscribe('arc:settlement:status'
+- subscribe('arc:blockchain:confirmation')
+- subscribe('arc:liquidity:update')
+- subscribe('arc:attestation:verified')
+
+Tier 3: Arc SDK (TypeScript/Python/Go)
+- ArcBlockchainClient class
+- ArcSettlementOrchestrator
+- ArcAttestationValidator
+- ArcLiquidityMonitor
+```
+
+### Arc Blockchain in Settlement Process
+
+**Complete Transfer Flow with Arc Blockchain:**
+
+```
+1. User Initiates Transfer (Source Chain)
+   └─> Arc Gateway validates request
+       └─> Checks unified balance
+       └─> Verifies destination chain support
+       └─> Sends to Arc Blockchain
+
+2. Arc Blockchain Consensus Layer
+   └─> Verifies liquidity availability
+   └─> Assigns settlement epoch (batch grouping)
+   └─> Reserves USDC from liquidity pools
+   └─> Awaits burn proof from source chain
+
+3. Source Chain Execution
+   └─> CCTP contract burns USDC
+   └─> Emits burn event
+   └─> Arc Blockchain listens & records burn
+   └─> Validates burn proof signature
+
+4. Arc Blockchain Settlement Authority
+   └─> Accumulates burn proofs in settlement epoch
+   └─> Circle attesters verify each burn
+   └─> Once threshold reached (3+ attesters), settlement is FINAL
+   └─> Arc Blockchain broadcasts settlement certificate
+
+5. Destination Chain Execution
+   └─> CCTP contract mints USDC (backed by Arc certificate)
+   └─> User receives USDC on destination
+   └─> Arc Blockchain records mint confirmation
+
+6. Database Update
+   └─> payment_sessions.arc_blockchain_tx_id
+   └─> payment_sessions.arc_settlement_epoch
+   └─> payment_sessions.arc_confirmation_depth
+   └─> payment_sessions.arc_attestation_list
+   └─> payment_sessions.arc_settlement_finality_time
+```
+
+### Arc Blockchain Monitoring
+
+**New database fields for Arc Blockchain tracking:**
+
+```sql
+-- In payment_sessions table
+arc_blockchain_tx_id VARCHAR(255),           -- Arc settlement transaction ID
+arc_settlement_epoch INTEGER,                 -- Batch number on Arc
+arc_confirmation_depth INTEGER,              -- Number of Arc confirmations
+arc_burn_proof_hash VARCHAR(255),             -- Hash of source chain burn proof
+arc_attestation_list JSONB,                   -- Array of attester signatures
+arc_attestation_count INTEGER,                -- Number of attesters (typically 3-5)
+arc_settlement_finality_time_ms INTEGER,     -- Time to reach finality on Arc
+arc_blockchain_confirmed_at TIMESTAMP,       -- When Arc Blockchain confirmed
+```
 
 ---
 
@@ -88,6 +256,7 @@ Avalanche Fuji (43113):      0x5425890298aed601595a70AB815c96711a31Bc65
 **Description:** Physical payment kiosk at merchant location
 
 **User Flow:**
+
 ```
 → Merchant displays QR code
 → Customer scans with MetaMask
@@ -99,11 +268,13 @@ Avalanche Fuji (43113):      0x5425890298aed601595a70AB815c96711a31Bc65
 ```
 
 **Implementation:**
+
 - Static QR code: `ethereum:0x<merchant-address>@<chain-id>?amount=<USDC>`
 - Fee display: "Total: $50.00 + $0.05 Arc fee"
 - Payment session: `terminal_type='pos'`, `arc_enabled=true`
 
 **Files:**
+
 - `src/services/posTerminalService.js` (NEW)
 - `src/services/dynamicQRService.js` (UPDATE)
 
@@ -114,6 +285,7 @@ Avalanche Fuji (43113):      0x5425890298aed601595a70AB815c96711a31Bc65
 **Description:** Mobile AR app discovering agents in 3D space
 
 **User Flow:**
+
 ```
 → User opens AR viewer app
 → Discovers agent in AR 3D space
@@ -127,6 +299,7 @@ Avalanche Fuji (43113):      0x5425890298aed601595a70AB815c96711a31Bc65
 ```
 
 **Current Status:** ✅ ARTM Styling Complete
+
 - LED pulse animation (2s cycle)
 - Scanline overlay (8s drift)
 - Gradient backgrounds
@@ -136,6 +309,7 @@ Avalanche Fuji (43113):      0x5425890298aed601595a70AB815c96711a31Bc65
 **Next:** Arc execution integration
 
 **Files:**
+
 - `apps/cube-viewer/src/components/PaymentModal.tsx` (EXISTING - enhanced)
 - `packages/wallet-connector/src/connector.ts` (UPDATE)
 
@@ -146,6 +320,7 @@ Avalanche Fuji (43113):      0x5425890298aed601595a70AB815c96711a31Bc65
 **Description:** Virtual ATM interface with full crypto withdrawal/deposit
 
 **User Flow:**
+
 ```
 → Kiosk display shows welcome
 → User connects wallet (MetaMask/Circle)
@@ -163,6 +338,7 @@ Avalanche Fuji (43113):      0x5425890298aed601595a70AB815c96711a31Bc65
 **Terminal Type:** Desktop/Kiosk with terminal aesthetic
 
 **Files:**
+
 - `apps/deploy-cube/src/components/ARTMWithdrawalModal.tsx` (NEW)
 - `src/services/artmWithdrawalService.ts` (NEW)
 
@@ -214,6 +390,7 @@ ALTER TABLE agents ADD COLUMN (
 **Goal:** Core infrastructure setup
 
 **Tasks:**
+
 - [ ] Create `database/migrations/002_arc_payment_sessions.sql`
 - [ ] Create `.env.arc.example` template
 - [ ] Verify `packages/wallet-connector/src/circleGateway.ts` exists
@@ -222,6 +399,7 @@ ALTER TABLE agents ADD COLUMN (
 - [ ] Integration tests setup
 
 **Deliverables:**
+
 - Database migration file
 - Environment template
 - Test scaffold
@@ -236,6 +414,7 @@ ALTER TABLE agents ADD COLUMN (
 **Goal:** Arc-compatible QR codes for POS
 
 **Tasks:**
+
 - [ ] Update `dynamicQRService.js`
 - [ ] Implement EIP-681 Arc URIs
 - [ ] Fee preview display
@@ -243,6 +422,7 @@ ALTER TABLE agents ADD COLUMN (
 - [ ] Dual mode (Arc + CCIP fallback)
 
 **Deliverables:**
+
 - Arc QR generation service
 - Fee estimation API
 - E2E tests
@@ -256,6 +436,7 @@ ALTER TABLE agents ADD COLUMN (
 **Status:** Completed Feb 8, 2026
 
 **Completed:**
+
 - [x] LED pulse animation
 - [x] Scanline overlay
 - [x] Gradient backgrounds
@@ -271,13 +452,15 @@ ALTER TABLE agents ADD COLUMN (
 **Goal:** Arc execution + session tracking
 
 **Tasks:**
+
 - [ ] Implement `executeArcTransfer()`
-- [ ] Backend session writer for arc_* metadata
+- [ ] Backend session writer for arc\_\* metadata
 - [ ] Transfer status polling
 - [ ] Error handling + retry logic
 - [ ] Transaction history API
 
 **Deliverables:**
+
 - Arc execution service
 - Session update lifecycle
 - Status tracking API
@@ -291,6 +474,7 @@ ALTER TABLE agents ADD COLUMN (
 **Goal:** Integrate Arc into all 3 terminal types
 
 **Tasks:**
+
 - [ ] POS: Static QR + balance display
 - [ ] AR Viewer: ARTM modal + Arc integration
 - [ ] ARTM: Withdrawal interface + settlement UI
@@ -298,6 +482,7 @@ ALTER TABLE agents ADD COLUMN (
 - [ ] Error handling across terminals
 
 **Deliverables:**
+
 - POS service
 - AR Viewer enhancements
 - ARTM withdrawal UI
@@ -312,6 +497,7 @@ ALTER TABLE agents ADD COLUMN (
 **Goal:** Comprehensive testnet validation
 
 **Tasks:**
+
 - [ ] Unit tests (>80% coverage)
 - [ ] Integration tests (all 3 terminals)
 - [ ] E2E testnet (all 6-chain combos)
@@ -320,6 +506,7 @@ ALTER TABLE agents ADD COLUMN (
 - [ ] Load test: 100+ concurrent
 
 **Deliverables:**
+
 - Test suite
 - Performance benchmarks
 - Compatibility matrix
@@ -333,6 +520,7 @@ ALTER TABLE agents ADD COLUMN (
 **Goal:** Production readiness
 
 **Tasks:**
+
 - [ ] Mainnet USDC contracts
 - [ ] Native RPC endpoints
 - [ ] Circle production credentials
@@ -341,6 +529,7 @@ ALTER TABLE agents ADD COLUMN (
 - [ ] Rollback procedures
 
 **Deliverables:**
+
 - Mainnet config
 - Deployment checklist
 - Support runbooks
@@ -475,7 +664,7 @@ export interface UnifiedBalance {
 
 export interface TransferResult {
   transferId: string;
-  status: 'completed' | 'pending' | 'failed';
+  status: "completed" | "pending" | "failed";
   settlementTimeMs?: number;
   feeAmount: string;
   error?: string;
@@ -483,8 +672,8 @@ export interface TransferResult {
 
 export class CircleGatewayClient {
   // 1. Get unified USDC balance across all 12 chains
-  async getUnifiedBalance(address: string): Promise<UnifiedBalance>
-  
+  async getUnifiedBalance(address: string): Promise<UnifiedBalance>;
+
   // 2. Execute cross-chain CCTP transfer
   async executeCrossChainTransfer(config: {
     sourceChainId: number;
@@ -492,23 +681,24 @@ export class CircleGatewayClient {
     amount: string;
     destinationAddress: string;
     sourceAddress: string;
-  }): Promise<TransferResult>
-  
+  }): Promise<TransferResult>;
+
   // 3. Check if chain pair is supported
-  isCrossChainSupported(sourceChainId: number, destChainId: number): boolean
-  
+  isCrossChainSupported(sourceChainId: number, destChainId: number): boolean;
+
   // 4. Get transfer status
-  async getTransferStatus(transferId: string): Promise<TransferResult>
-  
+  async getTransferStatus(transferId: string): Promise<TransferResult>;
+
   // 5. Get supported chains
-  getSupportedChains(): number[]
-  
+  getSupportedChains(): number[];
+
   // 6. Calculate gateway fee
-  calculateGatewayFee(amount: string, feePercentage: number): string
+  calculateGatewayFee(amount: string, feePercentage: number): string;
 }
 ```
 
 **Verification Checklist:**
+
 - [ ] Client exists in workspace
 - [ ] All 6 methods implemented
 - [ ] Error handling for unsupported chains
@@ -624,9 +814,9 @@ git push origin feature/arc-integration-complete
 
 - [ ] Arc payments working on all 12 chains (testnet)
 - [ ] <30s average transfer time
-- [ ] >99.5% success rate
+- [ ] > 99.5% success rate
 - [ ] All 3 terminal types integrated
-- [ ] >80% test coverage
+- [ ] > 80% test coverage
 - [ ] Zero breaking changes to existing system
 - [ ] Production ready for mainnet deployment
 

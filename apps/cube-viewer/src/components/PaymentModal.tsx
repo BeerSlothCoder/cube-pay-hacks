@@ -912,12 +912,15 @@ export const PaymentModal: React.FC = () => {
                 {ensPaymentConfig && (
                   <div className="bg-slate-800/50 border border-cyan-500/50 rounded-lg p-4 mb-2">
                     <div className="text-center">
-                      <p className="text-cyan-400/70 text-xs font-mono mb-1">ENS Domain</p>
+                      <p className="text-cyan-400/70 text-xs font-mono mb-1">
+                        ENS Domain
+                      </p>
                       <p className="text-cyan-300 font-mono text-lg font-bold truncate">
                         {recipientInput}
                       </p>
                       <p className="text-cyan-400/60 text-xs font-mono mt-2 break-all">
-                        {ensPaymentConfig.resolvedAddress.slice(0, 6)}...{ensPaymentConfig.resolvedAddress.slice(-4)}
+                        {ensPaymentConfig.resolvedAddress.slice(0, 6)}...
+                        {ensPaymentConfig.resolvedAddress.slice(-4)}
                       </p>
                     </div>
                   </div>
@@ -991,7 +994,9 @@ export const PaymentModal: React.FC = () => {
                       <div className="bg-slate-800/50 border border-cyan-500/30 rounded-lg p-3 space-y-2">
                         {ensPaymentConfig.preferredChain && (
                           <div className="text-xs space-y-1">
-                            <p className="text-cyan-300 font-mono">PREFERRED:</p>
+                            <p className="text-cyan-300 font-mono">
+                              PREFERRED:
+                            </p>
                             <p className="text-cyan-200 font-semibold font-mono">
                               {ensPaymentConfig.preferredChain}
                             </p>
@@ -1121,7 +1126,9 @@ export const PaymentModal: React.FC = () => {
                     <div className="bg-red-900/30 border border-red-600/50 rounded-lg p-3">
                       <div className="flex items-center gap-2 text-red-400 mb-1">
                         <AlertCircle size={16} />
-                        <span className="text-sm font-semibold font-mono">DOMAIN NOT FOUND</span>
+                        <span className="text-sm font-semibold font-mono">
+                          DOMAIN NOT FOUND
+                        </span>
                       </div>
                       <p className="text-xs text-red-300/70 font-mono">
                         Unable to resolve {recipientInput} on {ensNetwork}

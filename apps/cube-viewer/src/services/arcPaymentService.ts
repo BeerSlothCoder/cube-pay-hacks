@@ -25,7 +25,11 @@
  */
 
 import { v4 as uuidv4 } from "uuid";
-import { arcQRService, type ArcPaymentRequest, type ArcQRData } from "./arcQRService";
+import {
+  arcQRService,
+  type ArcPaymentRequest,
+  type ArcQRData,
+} from "./arcQRService";
 import {
   CircleGatewayClient,
   createArcGatewayClient,
@@ -115,9 +119,13 @@ class ArcPaymentService {
    * 4. Create payment session for tracking
    * 5. Return QR data and session ID
    */
-  async initiatePayment(request: ArcPaymentRequest): Promise<ArcPaymentSession> {
+  async initiatePayment(
+    request: ArcPaymentRequest,
+  ): Promise<ArcPaymentSession> {
     this.paymentInstances++;
-    console.log(`[Arc Payment Service] Initiating payment #${this.paymentInstances}`);
+    console.log(
+      `[Arc Payment Service] Initiating payment #${this.paymentInstances}`,
+    );
 
     const sessionId = uuidv4();
     const paymentRequestId = uuidv4();
@@ -130,12 +138,12 @@ class ArcPaymentService {
       const feeQuote = await this.arcClient.getArcFeeQuote(
         request.sourceChainId,
         request.destinationChainId,
-        request.amount
+        request.amount,
       );
 
       if (!feeQuote.liquidity.available) {
         throw new Error(
-          `Insufficient Arc liquidity for transfer. Need ${request.amount} USDC, available ${feeQuote.liquidity.amountAvailable}`
+          `Insufficient Arc liquidity for transfer. Need ${request.amount} USDC, available ${feeQuote.liquidity.amountAvailable}`,
         );
       }
 
@@ -169,7 +177,7 @@ class ArcPaymentService {
       return session;
     } catch (error) {
       console.error(
-        `[Arc Payment Service] Payment initiation failed: ${(error as Error).message}`
+        `[Arc Payment Service] Payment initiation failed: ${(error as Error).message}`,
       );
       throw error;
     }
@@ -184,9 +192,11 @@ class ArcPaymentService {
   async processSignedTransaction(
     sessionId: string,
     senderAddress: string,
-    transactionHash?: string
+    transactionHash?: string,
   ): Promise<ArcPaymentSession> {
-    console.log(`[Arc Payment Service] Processing signed transaction: ${sessionId}`);
+    console.log(
+      `[Arc Payment Service] Processing signed transaction: ${sessionId}`,
+    );
 
     const session = this.activeSessions.get(sessionId);
     if (!session) {
@@ -212,13 +222,14 @@ class ArcPaymentService {
       };
 
       // Initiate transfer with Circle Arc Gateway
-      const transferResponse = await this.arcClient.initiateTransfer(transferRequest);
+      const transferResponse =
+        await this.arcClient.initiateTransfer(transferRequest);
       session.circleTransferId = transferResponse.transferId;
       session.circleTransferResponse = transferResponse;
       session.status = "processing";
 
       console.log(
-        `[Arc Payment Service] Transfer initiated: ${transferResponse.transferId}`
+        `[Arc Payment Service] Transfer initiated: ${transferResponse.transferId}`,
       );
 
       // Subscribe to settlement updates via WebSocket
@@ -260,17 +271,21 @@ class ArcPaymentService {
 
     try {
       const settlementStatus = await this.arcClient.checkSettlementStatus(
-        session.circleTransferId
+        session.circleTransferId,
       );
 
       session.settlementStatus = settlementStatus;
-      session.status = this.mapSettlementStatusToSessionStatus(settlementStatus.status);
+      session.status = this.mapSettlementStatusToSessionStatus(
+        settlementStatus.status,
+      );
       session.updatedAt = new Date().toISOString();
 
       this.activeSessions.set(sessionId, session);
       return session;
     } catch (error) {
-      console.error(`[Arc Payment Service] Status check failed: ${(error as Error).message}`);
+      console.error(
+        `[Arc Payment Service] Status check failed: ${(error as Error).message}`,
+      );
       throw error;
     }
   }
@@ -296,15 +311,15 @@ class ArcPaymentService {
 
       if (message.type === "settlement:status") {
         console.log(
-          `[Arc Payment Service] Settlement status update: ${message.data.status}`
+          `[Arc Payment Service] Settlement status update: ${message.data.status}`,
         );
 
         currentSession.status = this.mapWebSocketStatusToSessionStatus(
-          message.data.status
+          message.data.status,
         );
       } else if (message.type === "blockchain:confirmation") {
         console.log(
-          `[Arc Payment Service] Blockchain confirmation: depth=${message.data.confirmationDepth}, tx=${message.data.arcBlockchainTxId}`
+          `[Arc Payment Service] Blockchain confirmation: depth=${message.data.confirmationDepth}, tx=${message.data.arcBlockchainTxId}`,
         );
 
         if (currentSession.settlementStatus) {
@@ -323,7 +338,7 @@ class ArcPaymentService {
         }
       } else if (message.type === "error") {
         console.error(
-          `[Arc Payment Service] Settlement error: ${message.data.message}`
+          `[Arc Payment Service] Settlement error: ${message.data.message}`,
         );
         currentSession.status = "failed";
         currentSession.errors.push({
@@ -353,7 +368,7 @@ class ArcPaymentService {
     this.arcClient.subscribeToSettlementUpdates(
       [session.circleTransferId],
       onMessage,
-      onError
+      onError,
     );
   }
 
@@ -363,7 +378,9 @@ class ArcPaymentService {
    * Useful for clients without WebSocket support
    * Polls Arc Gateway every 500ms for up to 60 seconds
    */
-  async pollSettlementCompletion(sessionId: string): Promise<ArcPaymentSession> {
+  async pollSettlementCompletion(
+    sessionId: string,
+  ): Promise<ArcPaymentSession> {
     const session = this.activeSessions.get(sessionId);
     if (!session || !session.circleTransferId) {
       throw new Error(`Invalid payment session: ${sessionId}`);
@@ -373,7 +390,7 @@ class ArcPaymentService {
       const finalStatus = await this.arcClient.pollTransferStatus(
         session.circleTransferId,
         120, // Max 60 seconds (120 * 500ms)
-        500
+        500,
       );
 
       session.settlementStatus = finalStatus;
@@ -389,7 +406,7 @@ class ArcPaymentService {
       return session;
     } catch (error) {
       console.error(
-        `[Arc Payment Service] Poll completion failed: ${(error as Error).message}`
+        `[Arc Payment Service] Poll completion failed: ${(error as Error).message}`,
       );
       throw error;
     }
@@ -414,7 +431,7 @@ class ArcPaymentService {
 
     try {
       const attestations = await this.arcClient.verifyAttestations(
-        session.circleTransferId
+        session.circleTransferId,
       );
 
       return {
@@ -425,7 +442,7 @@ class ArcPaymentService {
       };
     } catch (error) {
       console.error(
-        `[Arc Payment Service] Attestation verification failed: ${(error as Error).message}`
+        `[Arc Payment Service] Attestation verification failed: ${(error as Error).message}`,
       );
       throw error;
     }
@@ -449,9 +466,13 @@ class ArcPaymentService {
   async getFeeEstimate(
     sourceChainId: number,
     destinationChainId: number,
-    amount: string
+    amount: string,
   ): Promise<ArcFeeQuote> {
-    return this.arcClient.getArcFeeQuote(sourceChainId, destinationChainId, amount);
+    return this.arcClient.getArcFeeQuote(
+      sourceChainId,
+      destinationChainId,
+      amount,
+    );
   }
 
   /**
@@ -478,20 +499,26 @@ class ArcPaymentService {
   /**
    * Generate payment metrics and reporting
    */
-  async getPaymentMetrics(
-    filter?: { terminalType?: string; status?: string }
-  ): Promise<ArcPaymentMetrics> {
+  async getPaymentMetrics(filter?: {
+    terminalType?: string;
+    status?: string;
+  }): Promise<ArcPaymentMetrics> {
     const sessions = Array.from(this.activeSessions.values());
 
     const filtered = sessions.filter((s) => {
-      if (filter?.terminalType && s.request.terminalType !== filter.terminalType)
+      if (
+        filter?.terminalType &&
+        s.request.terminalType !== filter.terminalType
+      )
         return false;
       if (filter?.status && s.status !== filter.status) return false;
       return true;
     });
 
     const totalPayments = filtered.length;
-    const completedPayments = filtered.filter((s) => s.status === "completed").length;
+    const completedPayments = filtered.filter(
+      (s) => s.status === "completed",
+    ).length;
     const successRate =
       totalPayments > 0 ? (completedPayments / totalPayments) * 100 : 0;
 
@@ -506,7 +533,7 @@ class ArcPaymentService {
           (s.circleTransferResponse?.fee
             ? parseFloat(s.circleTransferResponse.fee)
             : 0),
-        0
+        0,
       )
       .toFixed(2);
 
@@ -526,9 +553,7 @@ class ArcPaymentService {
 
     const attestationSuccessRate =
       attestationData.length > 0
-        ? (attestationData.filter(
-            (a) => a.collected >= a.required
-          ).length /
+        ? (attestationData.filter((a) => a.collected >= a.required).length /
             attestationData.length) *
           100
         : 0;
@@ -562,7 +587,9 @@ class ArcPaymentService {
     for (const sessionId of expiredSessions) {
       this.activeSessions.delete(sessionId);
       this.wsSubscriptions.delete(sessionId);
-      console.log(`[Arc Payment Service] Expired session cleaned up: ${sessionId}`);
+      console.log(
+        `[Arc Payment Service] Expired session cleaned up: ${sessionId}`,
+      );
     }
   }
 
@@ -593,7 +620,7 @@ class ArcPaymentService {
    * Map Circle settlement status to session status
    */
   private mapSettlementStatusToSessionStatus(
-    status: "pending" | "processing" | "completed" | "failed"
+    status: "pending" | "processing" | "completed" | "failed",
   ): "qr_generated" | "initiated" | "processing" | "completed" | "failed" {
     switch (status) {
       case "completed":
@@ -609,7 +636,7 @@ class ArcPaymentService {
    * Map WebSocket status message to session status
    */
   private mapWebSocketStatusToSessionStatus(
-    status: string | undefined
+    status: string | undefined,
   ): "qr_generated" | "initiated" | "processing" | "completed" | "failed" {
     if (!status) return "processing";
     if (status.includes("completed")) return "completed";

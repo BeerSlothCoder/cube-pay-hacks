@@ -86,10 +86,10 @@ class ArcQRService {
     new Map();
   private cacheTimeout = 600000; // 10 minutes
   private feePercentage = parseFloat(
-    process.env.VITE_ARC_GATEWAY_FEE_PERCENTAGE || "0.1"
+    process.env.VITE_ARC_GATEWAY_FEE_PERCENTAGE || "0.1",
   );
   private settlementTimeMs = parseInt(
-    process.env.VITE_ARC_SETTLEMENT_TIME_MS || "5000"
+    process.env.VITE_ARC_SETTLEMENT_TIME_MS || "5000",
   ); // 5 seconds default
 
   constructor() {
@@ -135,7 +135,7 @@ class ArcQRService {
     });
 
     console.log(
-      `[Arc QR Service] Initialized with ${this.supportedChains.size} supported chains`
+      `[Arc QR Service] Initialized with ${this.supportedChains.size} supported chains`,
     );
   }
 
@@ -165,14 +165,17 @@ class ArcQRService {
     const destChain = this.supportedChains.get(request.destinationChainId);
 
     if (!sourceChain || !destChain) {
-      throw new Error(`Unsupported chain pair: ${request.sourceChainId} → ${request.destinationChainId}`);
+      throw new Error(
+        `Unsupported chain pair: ${request.sourceChainId} → ${request.destinationChainId}`,
+      );
     }
 
     // Calculate fees
     const feeEstimate = this.estimateArcFee(request.amount);
 
     // Generate Arc Gateway address (would be Circle's actual gateway address in production)
-    const arcGatewayAddress = process.env.VITE_ARC_GATEWAY_ADDRESS ||
+    const arcGatewayAddress =
+      process.env.VITE_ARC_GATEWAY_ADDRESS ||
       "0x1234567890123456789012345678901234567890";
 
     // Build EIP-681 URI with Arc Blockchain parameters
@@ -180,12 +183,15 @@ class ArcQRService {
       sourceChain,
       arcGatewayAddress,
       request,
-      feeEstimate
+      feeEstimate,
     );
 
     // Generate Arc-specific deep links
     const deepLink = this.generateMetaMaskDeepLink(eip681Uri);
-    const walletConnectUri = this.generateWalletConnectURI(request, feeEstimate);
+    const walletConnectUri = this.generateWalletConnectURI(
+      request,
+      feeEstimate,
+    );
 
     // Create Arc QR data with settlement metadata
     const qrData: ArcQRData = {
@@ -199,7 +205,9 @@ class ArcQRService {
         sourceChain: sourceChain.name,
         destinationChain: destChain.name,
         estimatedFee: feeEstimate.totalFee,
-        settlementTime: this.formatSettlementTime(feeEstimate.estimatedSettlementMs),
+        settlementTime: this.formatSettlementTime(
+          feeEstimate.estimatedSettlementMs,
+        ),
       },
     };
 
@@ -219,7 +227,7 @@ class ArcQRService {
     sourceChain: ArcChainConfig,
     arcGatewayAddress: string,
     request: ArcPaymentRequest,
-    feeEstimate: ArcFeeEstimate
+    feeEstimate: ArcFeeEstimate,
   ): string {
     const destChain = this.supportedChains.get(request.destinationChainId)!;
 
@@ -284,7 +292,7 @@ class ArcQRService {
    */
   private generateWalletConnectURI(
     request: ArcPaymentRequest,
-    feeEstimate: ArcFeeEstimate
+    feeEstimate: ArcFeeEstimate,
   ): string {
     // WalletConnect v2 support for transfers
     // This would integrate with WalletConnect v2 SDK in production
@@ -317,7 +325,7 @@ class ArcQRService {
    */
   private encodeTransferCalldata(
     _request: ArcPaymentRequest,
-    _feeEstimate: ArcFeeEstimate
+    _feeEstimate: ArcFeeEstimate,
   ): string {
     // In production, this would use ethers.js or web3.js to encode
     // the actual function call based on Arc Gateway ABI
@@ -353,7 +361,7 @@ class ArcQRService {
    */
   async estimateSettlementTime(
     sourceChainId: number,
-    destinationChainId: number
+    destinationChainId: number,
   ): Promise<number> {
     // Arc Blockchain settlement time varies by network congestion
     // Typically: 5-30 seconds depending on chains
@@ -379,7 +387,9 @@ class ArcQRService {
 
     // Validate recipient address
     if (!/^0x[a-fA-F0-9]{40}$/.test(request.recipientAddress)) {
-      throw new Error("Invalid recipient address: must be valid Ethereum address");
+      throw new Error(
+        "Invalid recipient address: must be valid Ethereum address",
+      );
     }
 
     // Validate chains
@@ -388,13 +398,15 @@ class ArcQRService {
     }
 
     if (!this.supportedChains.has(request.destinationChainId)) {
-      throw new Error(`Unsupported destination chain: ${request.destinationChainId}`);
+      throw new Error(
+        `Unsupported destination chain: ${request.destinationChainId}`,
+      );
     }
 
     // Validate chain pair (no same-chain transfers)
     if (request.sourceChainId === request.destinationChainId) {
       throw new Error(
-        "Source and destination chains must be different for Arc transfers"
+        "Source and destination chains must be different for Arc transfers",
       );
     }
 
@@ -434,10 +446,10 @@ class ArcQRService {
    * Get supported chains by environment
    */
   getSupportedChainsByEnvironment(
-    environment: "testnet" | "mainnet"
+    environment: "testnet" | "mainnet",
   ): ArcChainConfig[] {
     return Array.from(this.supportedChains.values()).filter(
-      (chain) => chain.environment === environment
+      (chain) => chain.environment === environment,
     );
   }
 
@@ -446,7 +458,7 @@ class ArcQRService {
    */
   isChainPairSupported(
     sourceChainId: number,
-    destinationChainId: number
+    destinationChainId: number,
   ): ArcChainPair {
     const sourceChain = this.supportedChains.get(sourceChainId);
     const destChain = this.supportedChains.get(destinationChainId);

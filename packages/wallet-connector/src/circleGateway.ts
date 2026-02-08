@@ -161,26 +161,25 @@ export class CircleGatewayClient {
         }
 
         if (
-          (error.response?.status === 429 ||
-            error.response?.status === 503) &&
+          (error.response?.status === 429 || error.response?.status === 503) &&
           config.__retryCount < this.config.maxRetries!
         ) {
           config.__retryCount++;
           await new Promise((resolve) =>
             setTimeout(
               resolve,
-              this.config.retryDelayMs! * Math.pow(2, config.__retryCount - 1)
-            )
+              this.config.retryDelayMs! * Math.pow(2, config.__retryCount - 1),
+            ),
           );
           return this.httpClient(config);
         }
 
         return Promise.reject(error);
-      }
+      },
     );
 
     console.log(
-      `[Circle Arc Gateway Client] Initialized for ${this.config.environment} environment`
+      `[Circle Arc Gateway Client] Initialized for ${this.config.environment} environment`,
     );
   }
 
@@ -188,7 +187,7 @@ export class CircleGatewayClient {
    * Initiate Arc transfer (CCTP + Arc Blockchain settlement)
    */
   async initiateTransfer(
-    request: ArcTransferRequest
+    request: ArcTransferRequest,
   ): Promise<ArcTransferResponse> {
     try {
       this.validateTransferRequest(request);
@@ -196,28 +195,25 @@ export class CircleGatewayClient {
       const feeQuote = await this.getArcFeeQuote(
         request.sourceChainId,
         request.destinationChainId,
-        request.amount
+        request.amount,
       );
 
       if (!feeQuote.liquidity.available) {
         throw new Error(
-          `Insufficient Arc liquidity: need ${request.amount} USDC, available ${feeQuote.liquidity.amountAvailable}`
+          `Insufficient Arc liquidity: need ${request.amount} USDC, available ${feeQuote.liquidity.amountAvailable}`,
         );
       }
 
-      const response = await this.httpClient.post(
-        "/v1/transfers/create",
-        {
-          idempotencyKey: request.idempotencyKey,
-          sourceChainId: request.sourceChainId,
-          destinationChainId: request.destinationChainId,
-          senderAddress: request.senderAddress,
-          recipientAddress: request.recipientAddress,
-          amount: request.amount,
-          settlementRequired: request.settlementRequired !== false,
-          attestationRequired: request.attestationRequired !== false,
-        }
-      );
+      const response = await this.httpClient.post("/v1/transfers/create", {
+        idempotencyKey: request.idempotencyKey,
+        sourceChainId: request.sourceChainId,
+        destinationChainId: request.destinationChainId,
+        senderAddress: request.senderAddress,
+        recipientAddress: request.recipientAddress,
+        amount: request.amount,
+        settlementRequired: request.settlementRequired !== false,
+        attestationRequired: request.attestationRequired !== false,
+      });
 
       return this.normalizeTransferResponse(response.data);
     } catch (error) {
@@ -232,7 +228,7 @@ export class CircleGatewayClient {
   async getArcFeeQuote(
     sourceChainId: number,
     destinationChainId: number,
-    amount: string
+    amount: string,
   ): Promise<ArcFeeQuote> {
     try {
       const response = await this.httpClient.get("/v1/quotes/fee", {
@@ -254,11 +250,11 @@ export class CircleGatewayClient {
    * Check Arc Blockchain settlement status
    */
   async checkSettlementStatus(
-    transferId: string
+    transferId: string,
   ): Promise<ArcSettlementStatus> {
     try {
       const response = await this.httpClient.get(
-        `/v1/transfers/${transferId}/settlement`
+        `/v1/transfers/${transferId}/settlement`,
       );
 
       const data = response.data;
@@ -322,7 +318,7 @@ export class CircleGatewayClient {
   subscribeToSettlementUpdates(
     transferIds: string[],
     onMessage: (message: ArcWebSocketMessage) => void,
-    onError?: (error: Error) => void
+    onError?: (error: Error) => void,
   ): void {
     if (!this.config.wsUrl) {
       console.warn("[Arc Gateway] WebSocket not configured");
@@ -344,7 +340,7 @@ export class CircleGatewayClient {
             JSON.stringify({
               action: "subscribe",
               transferId: id,
-            })
+            }),
           );
           this.wsSubscriptions.add(id);
         });
@@ -355,7 +351,10 @@ export class CircleGatewayClient {
           const message: ArcWebSocketMessage = JSON.parse(event.data);
           onMessage(message);
         } catch (error) {
-          console.error("[Arc Gateway] Failed to parse WebSocket message:", error);
+          console.error(
+            "[Arc Gateway] Failed to parse WebSocket message:",
+            error,
+          );
         }
       };
 
@@ -386,7 +385,7 @@ export class CircleGatewayClient {
         JSON.stringify({
           action: "unsubscribe",
           transferId,
-        })
+        }),
       );
       this.wsSubscriptions.delete(transferId);
     }
@@ -396,16 +395,15 @@ export class CircleGatewayClient {
    * Verify Arc Blockchain attestations
    */
   async verifyAttestations(
-    transferId: string
+    transferId: string,
   ): Promise<{ verified: boolean; count: number; required: number }> {
     try {
       const response = await this.httpClient.get(
-        `/v1/transfers/${transferId}/attestations`
+        `/v1/transfers/${transferId}/attestations`,
       );
 
       return {
-        verified:
-          response.data.collected >= response.data.required,
+        verified: response.data.collected >= response.data.required,
         count: response.data.collected,
         required: response.data.required,
       };
@@ -421,7 +419,7 @@ export class CircleGatewayClient {
   async pollTransferStatus(
     transferId: string,
     maxAttempts: number = 120,
-    intervalMs: number = 500
+    intervalMs: number = 500,
   ): Promise<ArcSettlementStatus> {
     let attempts = 0;
 
@@ -439,7 +437,7 @@ export class CircleGatewayClient {
     }
 
     throw new Error(
-      `Transfer ${transferId} did not complete after ${maxAttempts * intervalMs}ms`
+      `Transfer ${transferId} did not complete after ${maxAttempts * intervalMs}ms`,
     );
   }
 
@@ -482,8 +480,12 @@ export class CircleGatewayClient {
       createdAt: data.createdAt || new Date().toISOString(),
       updatedAt: data.updatedAt || new Date().toISOString(),
       ...(data.transactionHash && { transactionHash: data.transactionHash }),
-      ...(data.arcBlockchainTxId && { arcBlockchainTxId: data.arcBlockchainTxId }),
-      ...(data.arcSettlementEpoch && { arcSettlementEpoch: data.arcSettlementEpoch }),
+      ...(data.arcBlockchainTxId && {
+        arcBlockchainTxId: data.arcBlockchainTxId,
+      }),
+      ...(data.arcSettlementEpoch && {
+        arcSettlementEpoch: data.arcSettlementEpoch,
+      }),
       ...(data.cctpBurnTxHash && { cctpBurnTxHash: data.cctpBurnTxHash }),
       ...(data.cctpMintTxHash && { cctpMintTxHash: data.cctpMintTxHash }),
       ...(data.attestations && { attestations: data.attestations }),
@@ -505,7 +507,9 @@ export class CircleGatewayClient {
 /**
  * Factory function to create Circle Arc Gateway Client with config from environment
  */
-export function createArcGatewayClient(override?: Partial<CircleArcConfig>): CircleGatewayClient {
+export function createArcGatewayClient(
+  override?: Partial<CircleArcConfig>,
+): CircleGatewayClient {
   const config: CircleArcConfig = {
     apiKey: process.env.VITE_CIRCLE_API_KEY || "",
     appId: process.env.VITE_CIRCLE_APP_ID || "",
@@ -519,7 +523,9 @@ export function createArcGatewayClient(override?: Partial<CircleArcConfig>): Cir
       (process.env.NODE_ENV === "production"
         ? "wss://api.circle.com/arc/ws"
         : "wss://api-sandbox.circle.com/arc/ws"),
-    environment: (process.env.VITE_ARC_ENVIRONMENT || "testnet") as "testnet" | "mainnet",
+    environment: (process.env.VITE_ARC_ENVIRONMENT || "testnet") as
+      | "testnet"
+      | "mainnet",
     ...override,
   };
 
